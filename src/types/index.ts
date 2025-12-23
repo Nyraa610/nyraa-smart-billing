@@ -1,0 +1,59 @@
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
+  phone?: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Invoice {
+  id: string;
+  number: string;
+  client: Client;
+  items: InvoiceItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  createdAt: Date;
+  dueDate: Date;
+}
+
+export interface Quote {
+  id: string;
+  number: string;
+  client: Client;
+  items: InvoiceItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  createdAt: Date;
+  validUntil: Date;
+}
+
+export interface Transaction {
+  id: string;
+  type: 'income' | 'expense';
+  category: string;
+  description: string;
+  amount: number;
+  date: Date;
+  invoiceId?: string;
+}
+
+export interface DashboardStats {
+  totalRevenue: number;
+  pendingInvoices: number;
+  paidInvoices: number;
+  totalQuotes: number;
+  revenueChange: number;
+}
