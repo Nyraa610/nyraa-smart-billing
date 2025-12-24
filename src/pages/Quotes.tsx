@@ -12,6 +12,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Quote } from "@/types";
+import { QuoteForm } from "@/components/quotes/QuoteForm";
+import { QuoteDetailDialog } from "@/components/quotes/QuoteDetailDialog";
 
 const statusConfig = {
   draft: { label: "Brouillon", variant: "secondary" as const },
@@ -22,11 +25,24 @@ const statusConfig = {
 
 export default function QuotesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [quotes, setQuotes] = useState<Quote[]>(mockQuotes);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const filteredQuotes = mockQuotes.filter(quote =>
+  const filteredQuotes = quotes.filter(quote =>
     quote.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quote.number.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleSaveQuote = (quote: Quote) => {
+    setQuotes([quote, ...quotes]);
+  };
+
+  const handleViewQuote = (quote: Quote) => {
+    setSelectedQuote(quote);
+    setIsDetailOpen(true);
+  };
 
   return (
     <Layout>
@@ -37,7 +53,7 @@ export default function QuotesPage() {
             <h1 className="text-3xl font-bold text-foreground tracking-tight">Devis</h1>
             <p className="text-muted-foreground mt-1">Créez et gérez vos propositions commerciales</p>
           </div>
-          <Button variant="gradient" size="lg">
+          <Button variant="gradient" size="lg" onClick={() => setIsFormOpen(true)}>
             <Plus size={20} />
             Nouveau devis
           </Button>
@@ -79,8 +95,9 @@ export default function QuotesPage() {
                 {filteredQuotes.map((quote, index) => (
                   <tr 
                     key={quote.id} 
-                    className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                    className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
                     style={{ animationDelay: `${150 + index * 50}ms` }}
+                    onClick={() => handleViewQuote(quote)}
                   >
                     <td className="p-4">
                       <span className="font-semibold text-foreground">{quote.number}</span>
@@ -115,7 +132,7 @@ export default function QuotesPage() {
                       </Badge>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -124,7 +141,12 @@ export default function QuotesPage() {
                         >
                           <Download size={18} />
                         </Button>
-                        <Button variant="ghost" size="icon" title="Voir">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Voir"
+                          onClick={() => handleViewQuote(quote)}
+                        >
                           <Eye size={18} />
                         </Button>
                         <DropdownMenu>
@@ -150,6 +172,18 @@ export default function QuotesPage() {
           </div>
         </div>
       </div>
+
+      <QuoteForm 
+        open={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+        onSave={handleSaveQuote}
+      />
+
+      <QuoteDetailDialog
+        quote={selectedQuote}
+        open={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+      />
     </Layout>
   );
 }

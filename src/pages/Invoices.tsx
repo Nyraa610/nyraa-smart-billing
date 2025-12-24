@@ -12,6 +12,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Invoice } from "@/types";
+import { InvoiceForm } from "@/components/invoices/InvoiceForm";
+import { InvoiceDetailDialog } from "@/components/invoices/InvoiceDetailDialog";
 
 const statusConfig = {
   draft: { label: "Brouillon", variant: "secondary" as const },
@@ -22,11 +25,24 @@ const statusConfig = {
 
 export default function InvoicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const filteredInvoices = mockInvoices.filter(invoice =>
+  const filteredInvoices = invoices.filter(invoice =>
     invoice.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     invoice.number.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleSaveInvoice = (invoice: Invoice) => {
+    setInvoices([invoice, ...invoices]);
+  };
+
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsDetailOpen(true);
+  };
 
   return (
     <Layout>
@@ -37,7 +53,7 @@ export default function InvoicesPage() {
             <h1 className="text-3xl font-bold text-foreground tracking-tight">Factures</h1>
             <p className="text-muted-foreground mt-1">Gérez vos factures et générez des PDF</p>
           </div>
-          <Button variant="gradient" size="lg">
+          <Button variant="gradient" size="lg" onClick={() => setIsFormOpen(true)}>
             <Plus size={20} />
             Nouvelle facture
           </Button>
@@ -79,8 +95,9 @@ export default function InvoicesPage() {
                 {filteredInvoices.map((invoice, index) => (
                   <tr 
                     key={invoice.id} 
-                    className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                    className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
                     style={{ animationDelay: `${150 + index * 50}ms` }}
+                    onClick={() => handleViewInvoice(invoice)}
                   >
                     <td className="p-4">
                       <span className="font-semibold text-foreground">{invoice.number}</span>
@@ -115,7 +132,7 @@ export default function InvoicesPage() {
                       </Badge>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -124,7 +141,12 @@ export default function InvoicesPage() {
                         >
                           <Download size={18} />
                         </Button>
-                        <Button variant="ghost" size="icon" title="Voir">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Voir"
+                          onClick={() => handleViewInvoice(invoice)}
+                        >
                           <Eye size={18} />
                         </Button>
                         <DropdownMenu>
@@ -149,6 +171,18 @@ export default function InvoicesPage() {
           </div>
         </div>
       </div>
+
+      <InvoiceForm 
+        open={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+        onSave={handleSaveInvoice}
+      />
+
+      <InvoiceDetailDialog
+        invoice={selectedInvoice}
+        open={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+      />
     </Layout>
   );
 }
