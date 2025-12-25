@@ -14,7 +14,297 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          postal_code: string | null
+          siret: string | null
+          tva_number: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          postal_code?: string | null
+          siret?: string | null
+          tva_number?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          postal_code?: string | null
+          siret?: string | null
+          tva_number?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      company_info: {
+        Row: {
+          address: string | null
+          ape_code: string | null
+          bank_name: string | null
+          bic: string | null
+          capital: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          iban: string | null
+          id: string
+          invoice_prefix: string | null
+          legal_form: string | null
+          name: string
+          payment_delay: number | null
+          phone: string | null
+          postal_code: string | null
+          quote_prefix: string | null
+          rcs: string | null
+          siret: string | null
+          tax_rate: number | null
+          tva_number: string | null
+          updated_at: string | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          ape_code?: string | null
+          bank_name?: string | null
+          bic?: string | null
+          capital?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          iban?: string | null
+          id?: string
+          invoice_prefix?: string | null
+          legal_form?: string | null
+          name?: string
+          payment_delay?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          quote_prefix?: string | null
+          rcs?: string | null
+          siret?: string | null
+          tax_rate?: number | null
+          tva_number?: string | null
+          updated_at?: string | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          ape_code?: string | null
+          bank_name?: string | null
+          bic?: string | null
+          capital?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          iban?: string | null
+          id?: string
+          invoice_prefix?: string | null
+          legal_form?: string | null
+          name?: string
+          payment_delay?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          quote_prefix?: string | null
+          rcs?: string | null
+          siret?: string | null
+          tax_rate?: number | null
+          tva_number?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          items: Json
+          notes: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          due_date: string
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          items?: Json
+          notes?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          items?: Json
+          notes?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          issue_date: string
+          items: Json
+          notes: string | null
+          quote_number: string
+          status: Database["public"]["Enums"]["quote_status"]
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string | null
+          user_id: string
+          valid_until: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          issue_date?: string
+          items?: Json
+          notes?: string | null
+          quote_number: string
+          status?: Database["public"]["Enums"]["quote_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string | null
+          user_id: string
+          valid_until: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          issue_date?: string
+          items?: Json
+          notes?: string | null
+          quote_number?: string
+          status?: Database["public"]["Enums"]["quote_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string | null
+          user_id?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          client_name: string | null
+          created_at: string | null
+          date: string
+          description: string
+          id: string
+          invoice_id: string | null
+          invoice_number: string | null
+          payment_method: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          client_name?: string | null
+          created_at?: string | null
+          date?: string
+          description: string
+          id?: string
+          invoice_id?: string | null
+          invoice_number?: string | null
+          payment_method?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_name?: string | null
+          created_at?: string | null
+          date?: string
+          description?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_number?: string | null
+          payment_method?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +313,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      invoice_status: "non_reglee" | "reglement_en_cours" | "reglee"
+      quote_status: "en_attente" | "accepte" | "refuse" | "expire"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +441,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      invoice_status: ["non_reglee", "reglement_en_cours", "reglee"],
+      quote_status: ["en_attente", "accepte", "refuse", "expire"],
+    },
   },
 } as const
