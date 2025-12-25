@@ -164,7 +164,7 @@ export default function QuotesPage() {
       </div>
 
       <QuoteForm open={isFormOpen} onClose={() => setIsFormOpen(false)} onSave={handleSaveQuote} clients={clients} companyInfo={companyInfo} />
-      <QuoteDetailDialog quote={selectedQuote} open={isDetailOpen} onClose={() => setIsDetailOpen(false)} onStatusChange={handleStatusChange} />
+      <QuoteDetailDialog quote={selectedQuote} open={isDetailOpen} onClose={() => setIsDetailOpen(false)} onStatusChange={handleStatusChange} companyInfo={companyInfo} />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
