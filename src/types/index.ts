@@ -4,6 +4,10 @@ export interface Client {
   email: string;
   address: string;
   phone?: string;
+  siret?: string;
+  tvaNumber?: string;
+  postalCode?: string;
+  city?: string;
 }
 
 export interface InvoiceItem {
@@ -56,4 +60,36 @@ export interface DashboardStats {
   paidInvoices: number;
   totalQuotes: number;
   revenueChange: number;
+}
+
+export interface CompanyInfo {
+  name: string;
+  siret: string;
+  tvaNumber: string;
+  email: string;
+  phone: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  website: string;
+  legalForm: string;
+  capital: string;
+  rcs: string;
+  apeCode: string;
+  invoicePrefix: string;
+  quotePrefix: string;
+  taxRate: number;
+  paymentDelay: number;
+  bankName: string;
+  iban: string;
+  bic: string;
+}
+
+export interface SiretCompanyData {
+  siret: string;
+  name: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  tvaNumber: string;
 }
