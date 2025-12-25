@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, Lock, Mail } from 'lucide-react';
+import logoNyraa from '@/assets/logo-nyraa.png';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -44,10 +45,11 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         {/* Logo */}
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-glow mb-4">
-            <span className="text-primary-foreground font-bold text-2xl">N</span>
-          </div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Nyraa Digital</h1>
+          <img 
+            src={logoNyraa} 
+            alt="Nyraa Digital" 
+            className="mx-auto w-32 h-32 object-contain mb-4"
+          />
           <p className="text-muted-foreground mt-2">Gestion & Facturation</p>
         </div>
 

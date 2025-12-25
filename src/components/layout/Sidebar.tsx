@@ -1,4 +1,5 @@
-import { Home, Users, FileText, Calculator, Settings, LogOut, Menu, X, Receipt, Sparkles } from "lucide-react";
+import { Home, Users, FileText, Calculator, Settings, LogOut, Menu, X, Receipt } from "lucide-react";
+import logoNyraa from "@/assets/logo-nyraa.png";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -27,9 +28,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow-sm">
-            <Sparkles className="text-primary-foreground" size={20} />
-          </div>
+          <img src={logoNyraa} alt="Nyraa Digital" className="w-12 h-12 object-contain" />
           <div>
             <h1 className="text-lg font-bold text-sidebar-foreground">
               Nyraa <span className="text-gradient">Digital</span>
@@ -91,9 +90,7 @@ export function Sidebar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 glass px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-glow-sm">
-              <Sparkles className="text-primary-foreground" size={16} />
-            </div>
+            <img src={logoNyraa} alt="Nyraa Digital" className="w-8 h-8 object-contain" />
             <span className="font-bold text-foreground">Nyraa</span>
           </div>
           <Sheet open={open} onOpenChange={setOpen}>
