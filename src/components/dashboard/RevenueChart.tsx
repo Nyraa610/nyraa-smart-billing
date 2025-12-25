@@ -1,86 +1,83 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp } from 'lucide-react';
 
 const data = [
-  { month: 'Jan', revenue: 4000, expenses: 2400 },
-  { month: 'Fév', revenue: 3000, expenses: 1398 },
-  { month: 'Mar', revenue: 5000, expenses: 2800 },
-  { month: 'Avr', revenue: 4780, expenses: 3908 },
-  { month: 'Mai', revenue: 5890, expenses: 4800 },
-  { month: 'Jun', revenue: 6390, expenses: 3800 },
-  { month: 'Jul', revenue: 7490, expenses: 4300 },
+  { name: 'Jan', revenue: 4000, expenses: 2400 },
+  { name: 'Fév', revenue: 3000, expenses: 1398 },
+  { name: 'Mar', revenue: 2000, expenses: 9800 },
+  { name: 'Avr', revenue: 2780, expenses: 3908 },
+  { name: 'Mai', revenue: 1890, expenses: 4800 },
+  { name: 'Jun', revenue: 2390, expenses: 3800 },
+  { name: 'Jul', revenue: 3490, expenses: 4300 },
 ];
 
 export function RevenueChart() {
   return (
-    <div className="bg-card rounded-2xl border shadow-sm p-6 animate-slide-up" style={{ animationDelay: "100ms" }}>
-      <div className="flex items-center justify-between mb-6">
+    <div className="glass-card rounded-2xl p-4 md:p-6 animate-slide-up" style={{ animationDelay: "100ms" }}>
+      <div className="flex items-center justify-between mb-4 md:mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-card-foreground">Aperçu financier</h3>
-          <p className="text-sm text-muted-foreground">Revenus vs Dépenses</p>
+          <h3 className="text-base md:text-lg font-semibold text-foreground">Revenus</h3>
+          <p className="text-xs md:text-sm text-muted-foreground">Évolution des 7 derniers mois</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-sm text-muted-foreground">Revenus</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-secondary" />
-            <span className="text-sm text-muted-foreground">Dépenses</span>
-          </div>
+        <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
+          <TrendingUp className="text-success" size={20} />
         </div>
       </div>
       
-      <div className="h-[300px]">
+      <div className="h-48 md:h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(220, 70%, 45%)" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="hsl(220, 70%, 45%)" stopOpacity={0}/>
+                <stop offset="5%" stopColor="hsl(262, 83%, 58%)" stopOpacity={0.4}/>
+                <stop offset="95%" stopColor="hsl(262, 83%, 58%)" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(175, 60%, 40%)" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="hsl(175, 60%, 40%)" stopOpacity={0}/>
+                <stop offset="5%" stopColor="hsl(320, 70%, 55%)" stopOpacity={0.4}/>
+                <stop offset="95%" stopColor="hsl(320, 70%, 55%)" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 32%, 91%)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 10%, 15%)" />
             <XAxis 
-              dataKey="month" 
-              axisLine={false}
+              dataKey="name" 
+              stroke="hsl(240, 5%, 45%)" 
+              fontSize={12}
               tickLine={false}
-              tick={{ fill: 'hsl(215, 16%, 47%)', fontSize: 12 }}
+              axisLine={false}
             />
             <YAxis 
-              axisLine={false}
+              stroke="hsl(240, 5%, 45%)" 
+              fontSize={12}
               tickLine={false}
-              tick={{ fill: 'hsl(215, 16%, 47%)', fontSize: 12 }}
-              tickFormatter={(value) => `${value / 1000}k€`}
+              axisLine={false}
+              tickFormatter={(value) => `${value}€`}
             />
             <Tooltip 
-              contentStyle={{
-                backgroundColor: 'hsl(0, 0%, 100%)',
-                border: '1px solid hsl(214, 32%, 91%)',
+              contentStyle={{ 
+                backgroundColor: 'hsl(240, 10%, 8%)', 
+                border: '1px solid hsl(240, 10%, 18%)',
                 borderRadius: '12px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                color: 'hsl(0, 0%, 98%)',
+                boxShadow: '0 10px 40px hsl(0, 0%, 0%, 0.5)'
               }}
-              formatter={(value: number) => [`${value.toLocaleString('fr-FR')} €`, '']}
+              formatter={(value: number) => [`${value}€`, '']}
             />
-            <Area 
-              type="monotone" 
-              dataKey="revenue" 
-              stroke="hsl(220, 70%, 45%)" 
+            <Area
+              type="monotone"
+              dataKey="revenue"
+              stroke="hsl(262, 83%, 58%)"
               strokeWidth={2}
-              fillOpacity={1} 
-              fill="url(#colorRevenue)" 
+              fillOpacity={1}
+              fill="url(#colorRevenue)"
               name="Revenus"
             />
-            <Area 
-              type="monotone" 
-              dataKey="expenses" 
-              stroke="hsl(175, 60%, 40%)" 
+            <Area
+              type="monotone"
+              dataKey="expenses"
+              stroke="hsl(320, 70%, 55%)"
               strokeWidth={2}
-              fillOpacity={1} 
-              fill="url(#colorExpenses)" 
+              fillOpacity={1}
+              fill="url(#colorExpenses)"
               name="Dépenses"
             />
           </AreaChart>
