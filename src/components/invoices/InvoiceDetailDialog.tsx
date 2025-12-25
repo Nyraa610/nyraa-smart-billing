@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Invoice, InvoiceStatus } from "@/hooks/useSupabaseInvoices";
 import { CompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
+import { generateInvoicePDF } from "@/utils/pdfGenerator";
 
 interface InvoiceDetailDialogProps {
   invoice: Invoice | null;
@@ -19,8 +20,14 @@ const statusConfig: Record<InvoiceStatus, { label: string; variant: "default" | 
   reglee: { label: "Payée", variant: "default" },
 };
 
-export function InvoiceDetailDialog({ invoice, open, onClose, onStatusChange }: InvoiceDetailDialogProps) {
+export function InvoiceDetailDialog({ invoice, open, onClose, onStatusChange, companyInfo }: InvoiceDetailDialogProps) {
   if (!invoice) return null;
+
+  const handleDownloadPDF = () => {
+    if (companyInfo) {
+      generateInvoicePDF(invoice, companyInfo);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -129,7 +136,11 @@ export function InvoiceDetailDialog({ invoice, open, onClose, onStatusChange }: 
             </div>
           )}
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-between pt-2">
+            <Button variant="outline" onClick={handleDownloadPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              Télécharger PDF
+            </Button>
             <Button variant="outline" onClick={onClose}>Fermer</Button>
           </div>
         </div>

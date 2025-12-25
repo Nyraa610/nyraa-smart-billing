@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Save, Building2, Mail, Phone, MapPin, Globe, CreditCard, Search, Loader2 } from "lucide-react";
 import { useSupabaseCompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { fetchCompanyBySiret, formatSiret } from "@/utils/siretApi";
 import { toast } from "sonner";
 
@@ -17,7 +17,9 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Sync local state when companyInfo loads
-  useState(() => { setLocalInfo(companyInfo); });
+  useEffect(() => {
+    setLocalInfo(companyInfo);
+  }, [companyInfo]);
 
   const handleChange = (field: string, value: string | number) => {
     setLocalInfo({ ...localInfo, [field]: value });
