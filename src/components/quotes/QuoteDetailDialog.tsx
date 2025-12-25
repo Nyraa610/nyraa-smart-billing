@@ -1,123 +1,88 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Quote } from "@/types";
-import { Download, Mail, Printer, FileCheck } from "lucide-react";
-import { generateQuotePDF } from "@/utils/pdfGenerator";
+import { Check, X, Clock } from "lucide-react";
+import { Quote, QuoteStatus } from "@/hooks/useSupabaseQuotes";
 
 interface QuoteDetailDialogProps {
   quote: Quote | null;
   open: boolean;
   onClose: () => void;
+  onStatusChange?: (id: string, status: QuoteStatus) => void;
 }
 
-const statusConfig = {
-  draft: { label: "Brouillon", variant: "secondary" as const },
-  sent: { label: "Envoyé", variant: "default" as const },
-  accepted: { label: "Accepté", variant: "success" as const },
-  rejected: { label: "Refusé", variant: "destructive" as const },
+const statusConfig: Record<QuoteStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  en_attente: { label: "En attente", variant: "secondary" },
+  accepte: { label: "Accepté", variant: "default" },
+  refuse: { label: "Refusé", variant: "destructive" },
+  expire: { label: "Expiré", variant: "outline" },
 };
 
-export function QuoteDetailDialog({ quote, open, onClose }: QuoteDetailDialogProps) {
+export function QuoteDetailDialog({ quote, open, onClose, onStatusChange }: QuoteDetailDialogProps) {
   if (!quote) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold">
-              Devis {quote.number}
-            </DialogTitle>
-            <Badge variant={statusConfig[quote.status].variant}>
-              {statusConfig[quote.status].label}
-            </Badge>
+            <DialogTitle className="text-xl font-bold">Devis {quote.quote_number}</DialogTitle>
+            <Badge variant={statusConfig[quote.status].variant}>{statusConfig[quote.status].label}</Badge>
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* En-tête avec infos */}
-          <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Client</p>
-              <p className="font-semibold">{quote.client.name}</p>
-              <p className="text-sm text-muted-foreground">{quote.client.email}</p>
-              <p className="text-sm text-muted-foreground">{quote.client.address}</p>
+              <p className="font-semibold">{quote.client?.name || 'Client'}</p>
+              <p className="text-sm text-muted-foreground">{quote.client?.email}</p>
+              <p className="text-sm text-muted-foreground">{quote.client?.address}{quote.client?.postal_code && `, ${quote.client.postal_code}`}{quote.client?.city && ` ${quote.client.city}`}</p>
             </div>
             <div className="space-y-1 text-right">
               <p className="text-sm text-muted-foreground">Date d'émission</p>
-              <p className="font-semibold">{quote.createdAt.toLocaleDateString('fr-FR')}</p>
+              <p className="font-semibold">{new Date(quote.issue_date).toLocaleDateString('fr-FR')}</p>
               <p className="text-sm text-muted-foreground mt-2">Valide jusqu'au</p>
-              <p className="font-semibold">{quote.validUntil.toLocaleDateString('fr-FR')}</p>
+              <p className="font-semibold">{new Date(quote.valid_until).toLocaleDateString('fr-FR')}</p>
             </div>
           </div>
 
-          {/* Tableau des articles */}
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-3 font-semibold">Description</th>
-                  <th className="text-center p-3 font-semibold">Qté</th>
-                  <th className="text-right p-3 font-semibold">Prix unitaire</th>
-                  <th className="text-right p-3 font-semibold">Total</th>
+              <thead className="bg-muted/50"><tr>
+                <th className="text-left p-3 font-semibold text-sm">Description</th>
+                <th className="text-center p-3 font-semibold text-sm">Qté</th>
+                <th className="text-right p-3 font-semibold text-sm">Prix</th>
+                <th className="text-right p-3 font-semibold text-sm">Total</th>
+              </tr></thead>
+              <tbody>{quote.items.map((item, i) => (
+                <tr key={i} className="border-t">
+                  <td className="p-3 text-sm">{item.description}</td>
+                  <td className="p-3 text-center text-sm">{item.quantity}</td>
+                  <td className="p-3 text-right text-sm">{item.unitPrice.toFixed(2)} €</td>
+                  <td className="p-3 text-right font-semibold text-sm">{item.total.toFixed(2)} €</td>
                 </tr>
-              </thead>
-              <tbody>
-                {quote.items.map((item) => (
-                  <tr key={item.id} className="border-t">
-                    <td className="p-3">{item.description}</td>
-                    <td className="p-3 text-center">{item.quantity}</td>
-                    <td className="p-3 text-right">{item.unitPrice.toLocaleString('fr-FR')} €</td>
-                    <td className="p-3 text-right font-semibold">{item.total.toLocaleString('fr-FR')} €</td>
-                  </tr>
-                ))}
-              </tbody>
+              ))}</tbody>
             </table>
           </div>
 
-          {/* Totaux */}
           <div className="flex justify-end">
             <div className="w-64 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Sous-total HT</span>
-                <span>{quote.subtotal.toLocaleString('fr-FR')} €</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">TVA (20%)</span>
-                <span>{quote.tax.toLocaleString('fr-FR')} €</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold border-t pt-2">
-                <span>Total TTC</span>
-                <span className="text-secondary">{quote.total.toLocaleString('fr-FR')} €</span>
-              </div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Sous-total HT</span><span>{Number(quote.subtotal).toFixed(2)} €</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">TVA</span><span>{Number(quote.tax).toFixed(2)} €</span></div>
+              <div className="flex justify-between text-lg font-bold border-t pt-2"><span>Total TTC</span><span className="text-secondary">{Number(quote.total).toFixed(2)} €</span></div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 justify-end pt-4 border-t">
-            <Button variant="outline">
-              <FileCheck size={18} />
-              Convertir en facture
-            </Button>
-            <Button variant="outline">
-              <Mail size={18} />
-              Envoyer par email
-            </Button>
-            <Button variant="outline">
-              <Printer size={18} />
-              Imprimer
-            </Button>
-            <Button variant="gradient" onClick={() => generateQuotePDF(quote)}>
-              <Download size={18} />
-              Télécharger PDF
-            </Button>
-          </div>
+          {onStatusChange && (
+            <div className="flex gap-2 flex-wrap border-t pt-4">
+              <Button size="sm" variant={quote.status === 'en_attente' ? 'default' : 'outline'} onClick={() => onStatusChange(quote.id, 'en_attente')}><Clock className="mr-1 h-4 w-4" />En attente</Button>
+              <Button size="sm" variant={quote.status === 'accepte' ? 'default' : 'outline'} onClick={() => onStatusChange(quote.id, 'accepte')}><Check className="mr-1 h-4 w-4" />Accepté</Button>
+              <Button size="sm" variant={quote.status === 'refuse' ? 'default' : 'outline'} onClick={() => onStatusChange(quote.id, 'refuse')}><X className="mr-1 h-4 w-4" />Refusé</Button>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2"><Button variant="outline" onClick={onClose}>Fermer</Button></div>
         </div>
       </DialogContent>
     </Dialog>
