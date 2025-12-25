@@ -16,7 +16,6 @@ import { useSupabaseClients } from "@/hooks/useSupabaseClients";
 import { useSupabaseCompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
 import { InvoiceForm } from "@/components/invoices/InvoiceForm";
 import { InvoiceDetailDialog } from "@/components/invoices/InvoiceDetailDialog";
-import { generateInvoicePDF } from "@/utils/pdfGenerator";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -42,7 +41,7 @@ export default function InvoicesPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   
-  const { invoices, loading, addInvoice, updateInvoice, deleteInvoice, refetch } = useSupabaseInvoices();
+  const { invoices, loading, addInvoice, updateInvoice, deleteInvoice } = useSupabaseInvoices();
   const { clients } = useSupabaseClients();
   const { companyInfo } = useSupabaseCompanyInfo();
 
@@ -51,7 +50,7 @@ export default function InvoicesPage() {
     invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSaveInvoice = async (invoiceData: Omit<Invoice, 'id' | 'created_at' | 'client'>) => {
+  const handleSaveInvoice = async (invoiceData: Parameters<typeof addInvoice>[0]) => {
     const result = await addInvoice(invoiceData);
     if (result) {
       toast.success('Facture créée avec succès');
@@ -67,6 +66,7 @@ export default function InvoicesPage() {
     const success = await updateInvoice(id, { status });
     if (success) {
       toast.success(status === 'reglee' ? 'Facture marquée comme payée - Recette ajoutée au livre' : 'Statut mis à jour');
+      setIsDetailOpen(false);
     }
   };
 
@@ -78,32 +78,6 @@ export default function InvoicesPage() {
       }
       setDeleteId(null);
     }
-  };
-
-  const handleDownloadPDF = (invoice: Invoice) => {
-    const pdfInvoice = {
-      id: invoice.id,
-      number: invoice.invoice_number,
-      client: {
-        id: invoice.client_id || '',
-        name: invoice.client?.name || '',
-        email: invoice.client?.email || '',
-        phone: '',
-        address: invoice.client?.address || '',
-        siret: invoice.client?.siret || '',
-        tvaNumber: invoice.client?.tva_number || '',
-        postalCode: invoice.client?.postal_code || '',
-        city: invoice.client?.city || '',
-      },
-      items: invoice.items,
-      subtotal: Number(invoice.subtotal),
-      tax: Number(invoice.tax),
-      total: Number(invoice.total),
-      status: invoice.status === 'reglee' ? 'paid' as const : invoice.status === 'reglement_en_cours' ? 'sent' as const : 'draft' as const,
-      createdAt: new Date(invoice.issue_date),
-      dueDate: new Date(invoice.due_date),
-    };
-    generateInvoicePDF(pdfInvoice, companyInfo);
   };
 
   if (loading) {
@@ -123,7 +97,7 @@ export default function InvoicesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Factures</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">Gérez vos factures et générez des PDF</p>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base">Gérez vos factures</p>
           </div>
           <Button className="gradient-primary" size="lg" onClick={() => setIsFormOpen(true)}>
             <Plus size={20} className="mr-2" />
@@ -131,12 +105,12 @@ export default function InvoicesPage() {
           </Button>
         </div>
 
-        {/* Filters */}
+        {/* Search */}
         <div className="flex flex-col sm:flex-row gap-4 animate-slide-up">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <Input
-              placeholder="Rechercher une facture..."
+              placeholder="Rechercher..."
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -148,7 +122,7 @@ export default function InvoicesPage() {
         <div className="md:hidden space-y-3">
           {filteredInvoices.length === 0 ? (
             <div className="bg-card rounded-2xl border shadow-sm p-8 text-center">
-              <p className="text-muted-foreground">Aucune facture. Créez votre première facture !</p>
+              <p className="text-muted-foreground">Aucune facture</p>
             </div>
           ) : (
             filteredInvoices.map((invoice) => (
@@ -160,19 +134,15 @@ export default function InvoicesPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="font-semibold text-foreground">{invoice.invoice_number}</p>
-                    <p className="text-sm text-muted-foreground">{invoice.client?.name || 'Client inconnu'}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.client?.name || 'Client'}</p>
                   </div>
                   <Badge variant={statusConfig[invoice.status].variant} className="text-xs">
                     {statusConfig[invoice.status].label}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-lg font-bold text-foreground">
-                    {Number(invoice.total).toLocaleString('fr-FR')} €
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(invoice.due_date).toLocaleDateString('fr-FR')}
-                  </p>
+                  <p className="text-lg font-bold">{Number(invoice.total).toLocaleString('fr-FR')} €</p>
+                  <p className="text-xs text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString('fr-FR')}</p>
                 </div>
               </div>
             ))
@@ -197,9 +167,7 @@ export default function InvoicesPage() {
               <tbody>
                 {filteredInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      Aucune facture. Créez votre première facture !
-                    </td>
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">Aucune facture</td>
                   </tr>
                 ) : (
                   filteredInvoices.map((invoice) => (
@@ -208,9 +176,7 @@ export default function InvoicesPage() {
                       className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
                       onClick={() => handleViewInvoice(invoice)}
                     >
-                      <td className="p-4">
-                        <span className="font-semibold text-foreground">{invoice.invoice_number}</span>
-                      </td>
+                      <td className="p-4 font-semibold">{invoice.invoice_number}</td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
@@ -218,61 +184,33 @@ export default function InvoicesPage() {
                               {invoice.client?.name?.charAt(0) || '?'}
                             </span>
                           </div>
-                          <p className="font-medium text-foreground">{invoice.client?.name || 'Client inconnu'}</p>
+                          <p className="font-medium">{invoice.client?.name || 'Client'}</p>
                         </div>
                       </td>
-                      <td className="p-4 text-muted-foreground">
-                        {new Date(invoice.issue_date).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {new Date(invoice.due_date).toLocaleDateString('fr-FR')}
-                      </td>
+                      <td className="p-4 text-muted-foreground">{new Date(invoice.issue_date).toLocaleDateString('fr-FR')}</td>
+                      <td className="p-4 text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString('fr-FR')}</td>
+                      <td className="p-4 font-semibold">{Number(invoice.total).toLocaleString('fr-FR')} €</td>
                       <td className="p-4">
-                        <span className="font-semibold text-foreground">
-                          {Number(invoice.total).toLocaleString('fr-FR')} €
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <Badge variant={statusConfig[invoice.status].variant}>
-                          {statusConfig[invoice.status].label}
-                        </Badge>
+                        <Badge variant={statusConfig[invoice.status].variant}>{statusConfig[invoice.status].label}</Badge>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDownloadPDF(invoice)}
-                            title="Télécharger PDF"
-                          >
-                            <Download size={18} />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Voir"
-                            onClick={() => handleViewInvoice(invoice)}
-                          >
+                          <Button variant="ghost" size="icon" title="Voir" onClick={() => handleViewInvoice(invoice)}>
                             <Eye size={18} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal size={18} />
-                              </Button>
+                              <Button variant="ghost" size="icon"><MoreHorizontal size={18} /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'non_reglee')}>
-                                <AlertCircle className="mr-2 h-4 w-4" />
-                                Marquer non réglée
+                                <AlertCircle className="mr-2 h-4 w-4" />Non réglée
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'reglement_en_cours')}>
-                                <Clock className="mr-2 h-4 w-4" />
-                                Règlement en cours
+                                <Clock className="mr-2 h-4 w-4" />En cours
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'reglee')}>
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Marquer payée
+                                <CheckCircle className="mr-2 h-4 w-4" />Payée
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(invoice.id)}>
@@ -311,15 +249,11 @@ export default function InvoicesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer la facture ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. La facture sera définitivement supprimée.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Supprimer
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Supprimer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
