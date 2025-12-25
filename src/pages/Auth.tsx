@@ -48,7 +48,7 @@ export default function AuthPage() {
           <img 
             src={logoNyraa} 
             alt="Nyraa Digital" 
-            className="mx-auto w-32 h-32 object-contain mb-4"
+            className="mx-auto w-32 h-32 object-contain rounded-2xl mb-4"
           />
           <p className="text-muted-foreground mt-2">Gestion & Facturation</p>
         </div>
