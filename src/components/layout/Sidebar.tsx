@@ -28,7 +28,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img src={logoNyraa} alt="Nyraa Digital" className="w-12 h-12 object-contain" />
+          <img src={logoNyraa} alt="Nyraa Digital" className="w-12 h-12 object-contain rounded-xl" />
           <div>
             <h1 className="text-lg font-bold text-sidebar-foreground">
               Nyraa <span className="text-gradient">Digital</span>
@@ -90,7 +90,7 @@ export function Sidebar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 glass px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={logoNyraa} alt="Nyraa Digital" className="w-8 h-8 object-contain" />
+            <img src={logoNyraa} alt="Nyraa Digital" className="w-8 h-8 object-contain rounded-lg" />
             <span className="font-bold text-foreground">Nyraa</span>
           </div>
           <Sheet open={open} onOpenChange={setOpen}>
