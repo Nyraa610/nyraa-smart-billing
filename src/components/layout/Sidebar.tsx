@@ -6,11 +6,15 @@ import {
   Calculator, 
   Users, 
   Settings,
-  ChevronLeft,
-  ChevronRight
+  LogOut,
+  Menu,
+  X
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Tableau de bord", path: "/" },
@@ -21,40 +25,25 @@ const menuItems = [
   { icon: Settings, label: "Paramètres", path: "/settings" },
 ];
 
-export function Sidebar() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const { signOut, user } = useAuth();
 
   return (
-    <aside 
-      className={cn(
-        "gradient-sidebar h-screen flex flex-col transition-all duration-300 relative",
-        collapsed ? "w-20" : "w-64"
-      )}
-    >
+    <div className="h-full flex flex-col">
       {/* Logo */}
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
+      <div className="p-4 lg:p-6 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow flex-shrink-0">
           <span className="text-primary-foreground font-bold text-lg">N</span>
         </div>
-        {!collapsed && (
-          <div className="animate-fade-in">
-            <h1 className="text-sidebar-foreground font-bold text-lg tracking-tight">Nyraa Digital</h1>
-            <p className="text-sidebar-foreground/60 text-xs">Gestion & Facturation</p>
-          </div>
-        )}
+        <div>
+          <h1 className="text-sidebar-foreground font-bold text-lg tracking-tight">Nyraa Digital</h1>
+          <p className="text-sidebar-foreground/60 text-xs">Gestion & Facturation</p>
+        </div>
       </div>
 
-      {/* Collapse Button */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-8 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-md hover:shadow-glow transition-shadow"
-      >
-        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
-
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4">
+      <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -62,6 +51,7 @@ export function Sidebar() {
               <li key={item.path}>
                 <Link
                   to={item.path}
+                  onClick={onNavigate}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                     isActive 
@@ -72,15 +62,13 @@ export function Sidebar() {
                   <item.icon 
                     size={20} 
                     className={cn(
-                      "transition-colors",
+                      "transition-colors flex-shrink-0",
                       isActive ? "text-primary" : "group-hover:text-primary"
                     )} 
                   />
-                  {!collapsed && (
-                    <span className="font-medium text-sm animate-fade-in">{item.label}</span>
-                  )}
-                  {isActive && !collapsed && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-scale-in" />
+                  <span className="font-medium text-sm">{item.label}</span>
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
                   )}
                 </Link>
               </li>
@@ -89,14 +77,62 @@ export function Sidebar() {
         </ul>
       </nav>
 
+      {/* User & Logout */}
+      <div className="p-3 space-y-2">
+        {user && (
+          <div className="px-4 py-2 text-xs text-sidebar-foreground/60 truncate">
+            {user.email}
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          onClick={signOut}
+          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+        >
+          <LogOut size={20} />
+          <span className="font-medium text-sm">Déconnexion</span>
+        </Button>
+      </div>
+
       {/* Footer */}
-      {!collapsed && (
-        <div className="p-4 mx-3 mb-4 rounded-xl bg-sidebar-accent/50 animate-fade-in">
-          <p className="text-sidebar-foreground/80 text-xs">
-            © 2024 Nyraa Digital
-          </p>
+      <div className="p-4 mx-3 mb-4 rounded-xl bg-sidebar-accent/50">
+        <p className="text-sidebar-foreground/80 text-xs">
+          © 2024 Nyraa Digital
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <>
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar h-16 flex items-center justify-between px-4 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center shadow-glow">
+            <span className="text-primary-foreground font-bold">N</span>
+          </div>
+          <span className="text-sidebar-foreground font-bold">Nyraa Digital</span>
         </div>
-      )}
-    </aside>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-sidebar-foreground">
+              <Menu size={24} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-72 bg-sidebar border-sidebar-border">
+            <SidebarContent onNavigate={() => setMobileOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex gradient-sidebar h-screen w-64 flex-col">
+        <SidebarContent />
+      </aside>
+    </>
   );
 }
