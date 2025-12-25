@@ -1,12 +1,36 @@
 import { Layout } from "@/components/layout/Layout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useSupabaseTransactions } from "@/hooks/useSupabaseTransactions";
-import { TrendingUp, Wallet, BookOpen, Loader2, Receipt } from "lucide-react";
+import { TrendingUp, Wallet, BookOpen, Loader2, Receipt, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function AccountingPage() {
-  const { transactions, loading } = useSupabaseTransactions();
+  const { transactions, loading, deleteTransaction } = useSupabaseTransactions();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const totalIncome = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const handleDelete = async () => {
+    if (deleteId) {
+      const success = await deleteTransaction(deleteId);
+      if (success) {
+        toast.success('Transaction supprimée');
+      }
+      setDeleteId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -86,15 +110,38 @@ export default function AccountingPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="font-semibold text-success text-right">
-                    +{Number(transaction.amount).toLocaleString('fr-FR')} €
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-success text-right">
+                      +{Number(transaction.amount).toLocaleString('fr-FR')} €
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeleteId(transaction.id)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette recette ?</AlertDialogTitle>
+            <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

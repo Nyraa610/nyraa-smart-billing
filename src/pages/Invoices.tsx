@@ -16,6 +16,7 @@ import { useSupabaseClients } from "@/hooks/useSupabaseClients";
 import { useSupabaseCompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
 import { InvoiceForm } from "@/components/invoices/InvoiceForm";
 import { InvoiceDetailDialog } from "@/components/invoices/InvoiceDetailDialog";
+import { PaymentMethodDialog } from "@/components/invoices/PaymentMethodDialog";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -40,6 +41,7 @@ export default function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [paymentDialogInvoice, setPaymentDialogInvoice] = useState<{ id: string; fromDetail: boolean } | null>(null);
   
   const { invoices, loading, addInvoice, updateInvoice, deleteInvoice } = useSupabaseInvoices();
   const { clients } = useSupabaseClients();
@@ -62,11 +64,31 @@ export default function InvoicesPage() {
     setIsDetailOpen(true);
   };
 
-  const handleStatusChange = async (id: string, status: InvoiceStatus) => {
-    const success = await updateInvoice(id, { status });
+  const handleStatusChange = async (id: string, status: InvoiceStatus, paymentMethod?: string, fromDetail: boolean = false) => {
+    if (status === 'reglee' && !paymentMethod) {
+      setPaymentDialogInvoice({ id, fromDetail });
+      return;
+    }
+
+    const success = await updateInvoice(id, { status }, paymentMethod);
     if (success) {
       toast.success(status === 'reglee' ? 'Facture marquée comme payée - Recette ajoutée au livre' : 'Statut mis à jour');
-      setIsDetailOpen(false);
+      if (fromDetail) {
+        setIsDetailOpen(false);
+      }
+    }
+  };
+
+  const handlePaymentConfirm = async (method: string) => {
+    if (paymentDialogInvoice) {
+      const success = await updateInvoice(paymentDialogInvoice.id, { status: 'reglee' }, method);
+      if (success) {
+        toast.success('Facture marquée comme payée - Recette ajoutée au livre');
+        if (paymentDialogInvoice.fromDetail) {
+          setIsDetailOpen(false);
+        }
+      }
+      setPaymentDialogInvoice(null);
     }
   };
 
@@ -241,8 +263,14 @@ export default function InvoicesPage() {
         invoice={selectedInvoice}
         open={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        onStatusChange={handleStatusChange}
+        onStatusChange={(id, status) => handleStatusChange(id, status, undefined, true)}
         companyInfo={companyInfo}
+      />
+
+      <PaymentMethodDialog
+        open={!!paymentDialogInvoice}
+        onClose={() => setPaymentDialogInvoice(null)}
+        onConfirm={handlePaymentConfirm}
       />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

@@ -100,7 +100,7 @@ export function useSupabaseInvoices() {
     return formattedData;
   };
 
-  const updateInvoice = async (id: string, updates: Partial<Invoice>) => {
+  const updateInvoice = async (id: string, updates: Partial<Invoice>, paymentMethod?: string) => {
     const updateData: Record<string, unknown> = { ...updates };
     if (updates.items) {
       updateData.items = updates.items as unknown as Json;
@@ -116,6 +116,29 @@ export function useSupabaseInvoices() {
       toast.error('Erreur lors de la mise à jour');
       console.error(error);
       return false;
+    }
+
+    // If marking as paid, create a transaction with the payment method
+    if (updates.status === 'reglee' && paymentMethod) {
+      const invoice = invoices.find(inv => inv.id === id);
+      if (invoice) {
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .insert({
+            user_id: user!.id,
+            invoice_id: id,
+            date: new Date().toISOString().split('T')[0],
+            description: `Paiement facture ${invoice.invoice_number}`,
+            amount: invoice.total,
+            payment_method: paymentMethod,
+            client_name: invoice.client?.name || null,
+            invoice_number: invoice.invoice_number
+          });
+
+        if (transactionError) {
+          console.error('Error creating transaction:', transactionError);
+        }
+      }
     }
 
     await fetchInvoices();

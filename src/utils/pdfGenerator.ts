@@ -1,39 +1,11 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Invoice, Quote, CompanyInfo } from '@/types';
+import { Invoice } from '@/hooks/useSupabaseInvoices';
+import { Quote } from '@/hooks/useSupabaseQuotes';
+import { CompanyInfo } from '@/hooks/useSupabaseCompanyInfo';
 
-const getCompanyInfo = (): CompanyInfo => {
-  try {
-    const stored = localStorage.getItem('nyraa-company-info');
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return {
-    name: "Nyraa Digital",
-    siret: "",
-    tvaNumber: "",
-    email: "",
-    phone: "",
-    address: "",
-    postalCode: "",
-    city: "",
-    website: "",
-    legalForm: "",
-    capital: "",
-    rcs: "",
-    apeCode: "",
-    invoicePrefix: "FAC-",
-    quotePrefix: "DEV-",
-    taxRate: 20,
-    paymentDelay: 30,
-    bankName: "",
-    iban: "",
-    bic: "",
-  };
-};
-
-export function generateInvoicePDF(invoice: Invoice): void {
+export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void {
   const doc = new jsPDF();
-  const company = getCompanyInfo();
   
   // Header
   doc.setFillColor(51, 101, 178);
@@ -50,7 +22,7 @@ export function generateInvoicePDF(invoice: Invoice): void {
   doc.setFont('helvetica', 'normal');
   let headerY = 27;
   if (company.address) {
-    doc.text(`${company.address}${company.postalCode ? `, ${company.postalCode}` : ''}${company.city ? ` ${company.city}` : ''}`, 20, headerY);
+    doc.text(`${company.address}${company.postal_code ? `, ${company.postal_code}` : ''}${company.city ? ` ${company.city}` : ''}`, 20, headerY);
     headerY += 5;
   }
   if (company.phone) {
@@ -70,9 +42,9 @@ export function generateInvoicePDF(invoice: Invoice): void {
   doc.setTextColor(80, 80, 80);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`N° ${invoice.number}`, 140, 68);
-  doc.text(`Date: ${invoice.createdAt.toLocaleDateString('fr-FR')}`, 140, 74);
-  doc.text(`Échéance: ${invoice.dueDate.toLocaleDateString('fr-FR')}`, 140, 80);
+  doc.text(`N° ${invoice.invoice_number}`, 140, 68);
+  doc.text(`Date: ${new Date(invoice.issue_date).toLocaleDateString('fr-FR')}`, 140, 74);
+  doc.text(`Échéance: ${new Date(invoice.due_date).toLocaleDateString('fr-FR')}`, 140, 80);
   
   // Émetteur (Company info)
   doc.setTextColor(50, 50, 50);
@@ -89,16 +61,16 @@ export function generateInvoicePDF(invoice: Invoice): void {
     doc.text(company.address, 20, emitterY);
     emitterY += 5;
   }
-  if (company.postalCode || company.city) {
-    doc.text(`${company.postalCode} ${company.city}`.trim(), 20, emitterY);
+  if (company.postal_code || company.city) {
+    doc.text(`${company.postal_code} ${company.city}`.trim(), 20, emitterY);
     emitterY += 5;
   }
   if (company.siret) {
     doc.text(`SIRET: ${company.siret}`, 20, emitterY);
     emitterY += 5;
   }
-  if (company.tvaNumber) {
-    doc.text(`N° TVA: ${company.tvaNumber}`, 20, emitterY);
+  if (company.tva_number) {
+    doc.text(`N° TVA: ${company.tva_number}`, 20, emitterY);
     emitterY += 5;
   }
   
@@ -110,25 +82,30 @@ export function generateInvoicePDF(invoice: Invoice): void {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   let clientY = emitterY + 15;
-  doc.text(invoice.client.name, 20, clientY);
+  
+  const clientName = invoice.client?.name || 'Client';
+  doc.text(clientName, 20, clientY);
   clientY += 5;
-  if (invoice.client.address) {
+  
+  if (invoice.client?.address) {
     doc.text(invoice.client.address, 20, clientY);
     clientY += 5;
   }
-  if (invoice.client.postalCode || invoice.client.city) {
-    doc.text(`${invoice.client.postalCode || ''} ${invoice.client.city || ''}`.trim(), 20, clientY);
+  if (invoice.client?.postal_code || invoice.client?.city) {
+    doc.text(`${invoice.client?.postal_code || ''} ${invoice.client?.city || ''}`.trim(), 20, clientY);
     clientY += 5;
   }
-  if (invoice.client.siret) {
+  if (invoice.client?.siret) {
     doc.text(`SIRET: ${invoice.client.siret}`, 20, clientY);
     clientY += 5;
   }
-  if (invoice.client.tvaNumber) {
-    doc.text(`N° TVA: ${invoice.client.tvaNumber}`, 20, clientY);
+  if (invoice.client?.tva_number) {
+    doc.text(`N° TVA: ${invoice.client.tva_number}`, 20, clientY);
     clientY += 5;
   }
-  doc.text(invoice.client.email, 20, clientY);
+  if (invoice.client?.email) {
+    doc.text(invoice.client.email, 20, clientY);
+  }
   
   // Items table
   const tableStartY = Math.max(clientY + 15, 120);
@@ -164,10 +141,10 @@ export function generateInvoicePDF(invoice: Invoice): void {
   
   doc.setFontSize(10);
   doc.text('Total HT:', 130, finalY);
-  doc.text(`${invoice.subtotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY, { align: 'right' });
+  doc.text(`${Number(invoice.subtotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY, { align: 'right' });
   
-  doc.text(`TVA (${company.taxRate || 20}%):`, 130, finalY + 7);
-  doc.text(`${invoice.tax.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 7, { align: 'right' });
+  doc.text(`TVA (${company.tax_rate || 20}%):`, 130, finalY + 7);
+  doc.text(`${Number(invoice.tax).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 7, { align: 'right' });
   
   doc.setDrawColor(51, 101, 178);
   doc.setLineWidth(0.5);
@@ -177,7 +154,7 @@ export function generateInvoicePDF(invoice: Invoice): void {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(51, 101, 178);
   doc.text('Total TTC:', 130, finalY + 18);
-  doc.text(`${invoice.total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 18, { align: 'right' });
+  doc.text(`${Number(invoice.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 18, { align: 'right' });
   
   // Conditions de paiement
   doc.setTextColor(50, 50, 50);
@@ -187,7 +164,7 @@ export function generateInvoicePDF(invoice: Invoice): void {
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(`Paiement à ${company.paymentDelay || 30} jours à compter de la date de facture.`, 20, finalY + 42);
+  doc.text(`Paiement à ${company.payment_delay || 30} jours à compter de la date de facture.`, 20, finalY + 42);
   doc.text('En cas de retard de paiement, une pénalité de 3 fois le taux d\'intérêt légal sera appliquée,', 20, finalY + 48);
   doc.text('ainsi qu\'une indemnité forfaitaire de 40€ pour frais de recouvrement (art. L441-10 Code de commerce).', 20, finalY + 54);
   
@@ -197,8 +174,8 @@ export function generateInvoicePDF(invoice: Invoice): void {
     doc.text('COORDONNÉES BANCAIRES', 20, finalY + 65);
     doc.setFont('helvetica', 'normal');
     let bankY = finalY + 72;
-    if (company.bankName) {
-      doc.text(`Banque: ${company.bankName}`, 20, bankY);
+    if (company.bank_name) {
+      doc.text(`Banque: ${company.bank_name}`, 20, bankY);
       bankY += 5;
     }
     if (company.iban) {
@@ -219,29 +196,28 @@ export function generateInvoicePDF(invoice: Invoice): void {
   const footerLines: string[] = [];
   
   if (company.name) footerLines.push(company.name);
-  if (company.legalForm) footerLines[footerLines.length - 1] += ` - ${company.legalForm}`;
+  if (company.legal_form) footerLines[footerLines.length - 1] += ` - ${company.legal_form}`;
   if (company.capital) footerLines[footerLines.length - 1] += ` au capital de ${company.capital} €`;
   
   const legalLine = [];
   if (company.siret) legalLine.push(`SIRET: ${company.siret}`);
   if (company.rcs) legalLine.push(`RCS: ${company.rcs}`);
-  if (company.apeCode) legalLine.push(`Code APE: ${company.apeCode}`);
-  if (company.tvaNumber) legalLine.push(`N° TVA: ${company.tvaNumber}`);
+  if (company.ape_code) legalLine.push(`Code APE: ${company.ape_code}`);
+  if (company.tva_number) legalLine.push(`N° TVA: ${company.tva_number}`);
   
   if (legalLine.length > 0) footerLines.push(legalLine.join(' - '));
   
-  footerLines.push('TVA non applicable, art. 293 B du CGI'); // À modifier si assujetti à la TVA
+  footerLines.push('TVA non applicable, art. 293 B du CGI');
   
   footerLines.forEach((line, i) => {
     doc.text(line, 105, footerY + (i * 4), { align: 'center' });
   });
   
-  doc.save(`${invoice.number}.pdf`);
+  doc.save(`${invoice.invoice_number}.pdf`);
 }
 
-export function generateQuotePDF(quote: Quote): void {
+export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   const doc = new jsPDF();
-  const company = getCompanyInfo();
   
   // Header
   doc.setFillColor(41, 171, 164);
@@ -258,7 +234,7 @@ export function generateQuotePDF(quote: Quote): void {
   doc.setFont('helvetica', 'normal');
   let headerY = 27;
   if (company.address) {
-    doc.text(`${company.address}${company.postalCode ? `, ${company.postalCode}` : ''}${company.city ? ` ${company.city}` : ''}`, 20, headerY);
+    doc.text(`${company.address}${company.postal_code ? `, ${company.postal_code}` : ''}${company.city ? ` ${company.city}` : ''}`, 20, headerY);
     headerY += 5;
   }
   if (company.phone) {
@@ -278,9 +254,9 @@ export function generateQuotePDF(quote: Quote): void {
   doc.setTextColor(80, 80, 80);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`N° ${quote.number}`, 140, 68);
-  doc.text(`Date: ${quote.createdAt.toLocaleDateString('fr-FR')}`, 140, 74);
-  doc.text(`Valide jusqu'au: ${quote.validUntil.toLocaleDateString('fr-FR')}`, 140, 80);
+  doc.text(`N° ${quote.quote_number}`, 140, 68);
+  doc.text(`Date: ${new Date(quote.issue_date).toLocaleDateString('fr-FR')}`, 140, 74);
+  doc.text(`Valide jusqu'au: ${new Date(quote.valid_until).toLocaleDateString('fr-FR')}`, 140, 80);
   
   // Émetteur (Company info)
   doc.setTextColor(50, 50, 50);
@@ -297,16 +273,16 @@ export function generateQuotePDF(quote: Quote): void {
     doc.text(company.address, 20, emitterY);
     emitterY += 5;
   }
-  if (company.postalCode || company.city) {
-    doc.text(`${company.postalCode} ${company.city}`.trim(), 20, emitterY);
+  if (company.postal_code || company.city) {
+    doc.text(`${company.postal_code} ${company.city}`.trim(), 20, emitterY);
     emitterY += 5;
   }
   if (company.siret) {
     doc.text(`SIRET: ${company.siret}`, 20, emitterY);
     emitterY += 5;
   }
-  if (company.tvaNumber) {
-    doc.text(`N° TVA: ${company.tvaNumber}`, 20, emitterY);
+  if (company.tva_number) {
+    doc.text(`N° TVA: ${company.tva_number}`, 20, emitterY);
     emitterY += 5;
   }
   
@@ -318,25 +294,30 @@ export function generateQuotePDF(quote: Quote): void {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   let clientY = emitterY + 15;
-  doc.text(quote.client.name, 20, clientY);
+  
+  const clientName = quote.client?.name || 'Client';
+  doc.text(clientName, 20, clientY);
   clientY += 5;
-  if (quote.client.address) {
+  
+  if (quote.client?.address) {
     doc.text(quote.client.address, 20, clientY);
     clientY += 5;
   }
-  if (quote.client.postalCode || quote.client.city) {
-    doc.text(`${quote.client.postalCode || ''} ${quote.client.city || ''}`.trim(), 20, clientY);
+  if (quote.client?.postal_code || quote.client?.city) {
+    doc.text(`${quote.client?.postal_code || ''} ${quote.client?.city || ''}`.trim(), 20, clientY);
     clientY += 5;
   }
-  if (quote.client.siret) {
+  if (quote.client?.siret) {
     doc.text(`SIRET: ${quote.client.siret}`, 20, clientY);
     clientY += 5;
   }
-  if (quote.client.tvaNumber) {
-    doc.text(`N° TVA: ${quote.client.tvaNumber}`, 20, clientY);
+  if (quote.client?.tva_number) {
+    doc.text(`N° TVA: ${quote.client.tva_number}`, 20, clientY);
     clientY += 5;
   }
-  doc.text(quote.client.email, 20, clientY);
+  if (quote.client?.email) {
+    doc.text(quote.client.email, 20, clientY);
+  }
   
   // Items table
   const tableStartY = Math.max(clientY + 15, 120);
@@ -372,10 +353,10 @@ export function generateQuotePDF(quote: Quote): void {
   
   doc.setFontSize(10);
   doc.text('Total HT:', 130, finalY);
-  doc.text(`${quote.subtotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY, { align: 'right' });
+  doc.text(`${Number(quote.subtotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY, { align: 'right' });
   
-  doc.text(`TVA (${company.taxRate || 20}%):`, 130, finalY + 7);
-  doc.text(`${quote.tax.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 7, { align: 'right' });
+  doc.text(`TVA (${company.tax_rate || 20}%):`, 130, finalY + 7);
+  doc.text(`${Number(quote.tax).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 7, { align: 'right' });
   
   doc.setDrawColor(41, 171, 164);
   doc.setLineWidth(0.5);
@@ -385,7 +366,7 @@ export function generateQuotePDF(quote: Quote): void {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(41, 171, 164);
   doc.text('Total TTC:', 130, finalY + 18);
-  doc.text(`${quote.total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 18, { align: 'right' });
+  doc.text(`${Number(quote.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 18, { align: 'right' });
   
   // Conditions
   doc.setTextColor(50, 50, 50);
@@ -395,7 +376,7 @@ export function generateQuotePDF(quote: Quote): void {
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(`Ce devis est valable ${company.paymentDelay || 30} jours à compter de sa date d'émission.`, 20, finalY + 42);
+  doc.text(`Ce devis est valable ${company.payment_delay || 30} jours à compter de sa date d'émission.`, 20, finalY + 42);
   doc.text('Pour acceptation, veuillez retourner ce devis signé avec la mention "Bon pour accord".', 20, finalY + 48);
   
   // Signature zone
@@ -415,14 +396,14 @@ export function generateQuotePDF(quote: Quote): void {
   const footerLines: string[] = [];
   
   if (company.name) footerLines.push(company.name);
-  if (company.legalForm) footerLines[footerLines.length - 1] += ` - ${company.legalForm}`;
+  if (company.legal_form) footerLines[footerLines.length - 1] += ` - ${company.legal_form}`;
   if (company.capital) footerLines[footerLines.length - 1] += ` au capital de ${company.capital} €`;
   
   const legalLine = [];
   if (company.siret) legalLine.push(`SIRET: ${company.siret}`);
   if (company.rcs) legalLine.push(`RCS: ${company.rcs}`);
-  if (company.apeCode) legalLine.push(`Code APE: ${company.apeCode}`);
-  if (company.tvaNumber) legalLine.push(`N° TVA: ${company.tvaNumber}`);
+  if (company.ape_code) legalLine.push(`Code APE: ${company.ape_code}`);
+  if (company.tva_number) legalLine.push(`N° TVA: ${company.tva_number}`);
   
   if (legalLine.length > 0) footerLines.push(legalLine.join(' - '));
   
@@ -430,5 +411,5 @@ export function generateQuotePDF(quote: Quote): void {
     doc.text(line, 105, footerY + (i * 4), { align: 'center' });
   });
   
-  doc.save(`${quote.number}.pdf`);
+  doc.save(`${quote.quote_number}.pdf`);
 }

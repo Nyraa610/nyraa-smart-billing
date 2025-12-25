@@ -1,14 +1,17 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock } from "lucide-react";
+import { Check, X, Clock, Download } from "lucide-react";
 import { Quote, QuoteStatus } from "@/hooks/useSupabaseQuotes";
+import { CompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
+import { generateQuotePDF } from "@/utils/pdfGenerator";
 
 interface QuoteDetailDialogProps {
   quote: Quote | null;
   open: boolean;
   onClose: () => void;
   onStatusChange?: (id: string, status: QuoteStatus) => void;
+  companyInfo?: CompanyInfo;
 }
 
 const statusConfig: Record<QuoteStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -18,8 +21,14 @@ const statusConfig: Record<QuoteStatus, { label: string; variant: "default" | "s
   expire: { label: "Expiré", variant: "outline" },
 };
 
-export function QuoteDetailDialog({ quote, open, onClose, onStatusChange }: QuoteDetailDialogProps) {
+export function QuoteDetailDialog({ quote, open, onClose, onStatusChange, companyInfo }: QuoteDetailDialogProps) {
   if (!quote) return null;
+
+  const handleDownloadPDF = () => {
+    if (companyInfo) {
+      generateQuotePDF(quote, companyInfo);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -82,7 +91,13 @@ export function QuoteDetailDialog({ quote, open, onClose, onStatusChange }: Quot
             </div>
           )}
 
-          <div className="flex justify-end pt-2"><Button variant="outline" onClick={onClose}>Fermer</Button></div>
+          <div className="flex justify-between pt-2">
+            <Button variant="outline" onClick={handleDownloadPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              Télécharger PDF
+            </Button>
+            <Button variant="outline" onClick={onClose}>Fermer</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
