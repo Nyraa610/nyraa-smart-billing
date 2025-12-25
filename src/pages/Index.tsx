@@ -41,7 +41,7 @@ const Index = () => {
           <StatCard
             title="Chiffre d'affaires"
             value={`${totalRevenue.toLocaleString('fr-FR')} €`}
-            change={12.5}
+            change="+12.5%"
             icon={Euro}
             variant="primary"
             delay={0}

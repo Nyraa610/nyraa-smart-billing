@@ -1,10 +1,9 @@
 import { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface StatCardProps {
   title: string;
   value: string;
-  change?: number;
+  change?: string;
   icon: LucideIcon;
   variant?: "default" | "primary" | "success" | "warning";
   delay?: number;
@@ -12,57 +11,50 @@ interface StatCardProps {
 
 export function StatCard({ title, value, change, icon: Icon, variant = "default", delay = 0 }: StatCardProps) {
   const variants = {
-    default: "bg-card",
-    primary: "gradient-primary text-primary-foreground",
-    success: "bg-success/10 border-success/20",
-    warning: "bg-warning/10 border-warning/20",
+    default: "glass-card",
+    primary: "gradient-primary shadow-glow-sm",
+    success: "glass-card border-success/30",
+    warning: "glass-card border-warning/30",
   };
 
   const iconVariants = {
-    default: "bg-muted text-muted-foreground",
-    primary: "bg-primary-foreground/20 text-primary-foreground",
+    default: "bg-muted text-primary",
+    primary: "bg-white/20 text-primary-foreground",
     success: "bg-success/20 text-success",
     warning: "bg-warning/20 text-warning",
   };
 
+  const textVariants = {
+    default: "text-foreground",
+    primary: "text-primary-foreground",
+    success: "text-foreground",
+    warning: "text-foreground",
+  };
+
+  const subtitleVariants = {
+    default: "text-muted-foreground",
+    primary: "text-primary-foreground/80",
+    success: "text-muted-foreground",
+    warning: "text-muted-foreground",
+  };
+
   return (
     <div 
-      className={cn(
-        "rounded-2xl p-6 border shadow-sm hover:shadow-md transition-all duration-300 animate-slide-up",
-        variants[variant]
-      )}
+      className={`${variants[variant]} rounded-2xl p-4 md:p-6 animate-slide-up transition-all duration-300 hover:scale-[1.02]`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between">
-        <div>
-          <p className={cn(
-            "text-sm font-medium mb-1",
-            variant === "primary" ? "text-primary-foreground/80" : "text-muted-foreground"
-          )}>
-            {title}
-          </p>
-          <p className={cn(
-            "text-3xl font-bold tracking-tight",
-            variant === "primary" ? "text-primary-foreground" : "text-card-foreground"
-          )}>
-            {value}
-          </p>
-          {change !== undefined && (
-            <p className={cn(
-              "text-sm mt-2 font-medium",
-              change >= 0 
-                ? "text-success" 
-                : "text-destructive"
-            )}>
-              {change >= 0 ? "+" : ""}{change}% ce mois
+        <div className="space-y-2">
+          <p className={`text-xs md:text-sm font-medium ${subtitleVariants[variant]}`}>{title}</p>
+          <p className={`text-xl md:text-3xl font-bold ${textVariants[variant]}`}>{value}</p>
+          {change && (
+            <p className={`text-xs md:text-sm ${change.startsWith('+') ? 'text-success' : 'text-destructive'}`}>
+              {change} vs mois dernier
             </p>
           )}
         </div>
-        <div className={cn(
-          "p-3 rounded-xl",
-          iconVariants[variant]
-        )}>
-          <Icon size={24} />
+        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${iconVariants[variant]} flex items-center justify-center`}>
+          <Icon size={20} className="md:w-6 md:h-6" />
         </div>
       </div>
     </div>
