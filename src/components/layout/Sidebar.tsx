@@ -4,6 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useState } from "react";
 
 const navigation = [
@@ -56,17 +57,20 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
       {/* User & Logout */}
       <div className="p-4 border-t border-sidebar-border space-y-3">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-9 h-9 rounded-lg bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-semibold text-primary">
-              {user?.email?.charAt(0).toUpperCase()}
-            </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sidebar-accent flex items-center justify-center">
+              <span className="text-sm font-semibold text-primary">
+                {user?.email?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-sidebar-foreground truncate max-w-[120px]">
+                {user?.email}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">
-              {user?.email}
-            </p>
-          </div>
+          <ThemeToggle />
         </div>
         <Button
           variant="ghost"
