@@ -25,6 +25,7 @@ export interface CompanyInfo {
   bank_name: string;
   iban: string;
   bic: string;
+  logo_url: string;
 }
 
 const defaultCompanyInfo: CompanyInfo = {
@@ -48,6 +49,7 @@ const defaultCompanyInfo: CompanyInfo = {
   bank_name: '',
   iban: '',
   bic: '',
+  logo_url: '',
 };
 
 export function useSupabaseCompanyInfo() {
@@ -88,6 +90,7 @@ export function useSupabaseCompanyInfo() {
         bank_name: data.bank_name || '',
         iban: data.iban || '',
         bic: data.bic || '',
+        logo_url: data.logo_url || '',
       });
     }
     setLoading(false);
@@ -122,6 +125,7 @@ export function useSupabaseCompanyInfo() {
       bank_name: info.bank_name || null,
       iban: info.iban || null,
       bic: info.bic || null,
+      logo_url: info.logo_url || null,
     };
 
     const { data: existing } = await supabase

@@ -23,9 +23,9 @@ const statusConfig: Record<InvoiceStatus, { label: string; variant: "default" | 
 export function InvoiceDetailDialog({ invoice, open, onClose, onStatusChange, companyInfo }: InvoiceDetailDialogProps) {
   if (!invoice) return null;
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (companyInfo) {
-      generateInvoicePDF(invoice, companyInfo);
+      await generateInvoicePDF(invoice, companyInfo);
     }
   };
 

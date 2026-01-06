@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Download, Eye, MoreHorizontal, Search, Loader2, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Plus, Download, Eye, MoreHorizontal, Search, Loader2, CheckCircle, Clock, AlertCircle, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { exportInvoicesToCSV } from "@/utils/csvExport";
@@ -39,6 +39,7 @@ const statusConfig: Record<InvoiceStatus, { label: string; variant: "default" | 
 export default function InvoicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -50,7 +51,8 @@ export default function InvoicesPage() {
 
   const filteredInvoices = invoices.filter(invoice =>
     (invoice.client?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())
+    invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (invoice.title?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const handleSaveInvoice = async (invoiceData: Parameters<typeof addInvoice>[0]) => {
@@ -58,6 +60,16 @@ export default function InvoicesPage() {
     if (result) {
       toast.success('Facture créée avec succès');
     }
+  };
+
+  const handleEditInvoice = (invoice: Invoice) => {
+    setEditInvoice(invoice);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditInvoice(null);
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -238,6 +250,9 @@ export default function InvoicesPage() {
                           <Button variant="ghost" size="icon" title="Voir" onClick={() => handleViewInvoice(invoice)}>
                             <Eye size={18} />
                           </Button>
+                          <Button variant="ghost" size="icon" title="Modifier" onClick={() => handleEditInvoice(invoice)}>
+                            <Pencil size={18} />
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon"><MoreHorizontal size={18} /></Button>
@@ -271,10 +286,12 @@ export default function InvoicesPage() {
 
       <InvoiceForm 
         open={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+        onClose={handleCloseForm} 
         onSave={handleSaveInvoice}
+        onUpdate={updateInvoice}
         clients={clients}
         companyInfo={companyInfo}
+        editInvoice={editInvoice}
       />
 
       <InvoiceDetailDialog

@@ -21,15 +21,42 @@ function formatCurrency(amount: number): string {
   return amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u202F/g, ' ') + ' €';
 }
 
-export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void {
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): Promise<void> {
   const doc = new jsPDF();
   const pageWidth = 210;
   const margin = 15;
   const contentWidth = pageWidth - 2 * margin;
   
-  // === EN-TÊTE ENTREPRISE (gauche) ===
+  // === LOGO ENTREPRISE (si présent) ===
   let yPos = 20;
+  let logoHeight = 0;
   
+  if (company.logo_url) {
+    try {
+      const img = await loadImage(company.logo_url);
+      const maxLogoWidth = 40;
+      const maxLogoHeight = 25;
+      const ratio = Math.min(maxLogoWidth / img.width, maxLogoHeight / img.height);
+      const logoWidth = img.width * ratio;
+      logoHeight = img.height * ratio;
+      doc.addImage(img, 'PNG', margin, yPos - 5, logoWidth, logoHeight);
+      yPos += logoHeight + 5;
+    } catch (e) {
+      console.error('Error loading logo:', e);
+    }
+  }
+  
+  // === EN-TÊTE ENTREPRISE (gauche) ===
   // Nom entreprise en bleu gras
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(14);
@@ -75,6 +102,14 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
   doc.text(`N° : ${invoice.invoice_number}`, pageWidth - margin, 30, { align: 'right' });
   doc.text(`Date : ${formatDate(invoice.issue_date)}`, pageWidth - margin, 36, { align: 'right' });
   doc.text(`Échéance : ${formatDate(invoice.due_date)}`, pageWidth - margin, 42, { align: 'right' });
+  
+  // Titre/Objet de la facture
+  if (invoice.title) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    doc.text(`Objet : ${invoice.title}`, pageWidth - margin, 48, { align: 'right' });
+  }
   
   // === ENCADRÉ CLIENT ===
   const clientBoxY = 60;
