@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Download, Eye, MoreHorizontal, Search, Loader2, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { exportInvoicesToCSV } from "@/utils/csvExport";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,10 +122,27 @@ export default function InvoicesPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Factures</h1>
             <p className="text-muted-foreground mt-1 text-sm md:text-base">Gérez vos factures</p>
           </div>
-          <Button className="gradient-primary" size="lg" onClick={() => setIsFormOpen(true)}>
-            <Plus size={20} className="mr-2" />
-            Nouvelle facture
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => {
+                if (invoices.length === 0) {
+                  toast.error('Aucune facture à exporter');
+                  return;
+                }
+                exportInvoicesToCSV(invoices);
+                toast.success('Export CSV téléchargé');
+              }}
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline">Exporter</span>
+            </Button>
+            <Button className="gradient-primary" size="lg" onClick={() => setIsFormOpen(true)}>
+              <Plus size={20} className="mr-2" />
+              Nouvelle facture
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
