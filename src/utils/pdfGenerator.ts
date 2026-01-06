@@ -69,8 +69,7 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setFont('helvetica', 'normal');
   
   if (company.legal_form) {
-    const legalForm = company.legal_form === 'Entreprise individuelle' ? 'Micro-entreprise' : company.legal_form;
-    doc.text(legalForm, margin, yPos);
+    doc.text(company.legal_form, margin, yPos);
     yPos += 5;
   }
   
@@ -309,8 +308,8 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.text("• Réserve de propriété : Les marchandises demeurent la propriété du vendeur jusqu'au paiement intégral du prix.", margin, finalY);
   finalY += 4;
   
-  // Micro-entreprise
-  doc.text("• Micro-entreprise : Dispensée d'immatriculation au RCS et au répertoire des métiers.", margin, finalY);
+  // Entreprise individuelle
+  doc.text("• Entreprise individuelle : Dispensée d'immatriculation au RCS et au répertoire des métiers.", margin, finalY);
   
   // === MESSAGE NYRAA BILLING (en bas de page fixe) ===
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
