@@ -279,11 +279,12 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
   doc.text("Dispensée d'immatriculation au registre du commerce et des sociétés et au répertoire des métiers.", margin + 30, finalY);
   finalY += 10;
   
-  // === MESSAGE NYRAA BILLING ===
+  // === MESSAGE NYRAA BILLING (en bas de page fixe) ===
+  const pageHeight = 297; // A4 height in mm
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
-  doc.text('Facture générée par Nyraa Billing', pageWidth / 2, finalY, { align: 'center' });
+  doc.text('Facture générée par Nyraa Billing', pageWidth / 2, pageHeight - 10, { align: 'center' });
   
   doc.save(`${invoice.invoice_number}.pdf`);
 }
