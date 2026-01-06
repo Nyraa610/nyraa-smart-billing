@@ -73,6 +73,7 @@ export type Database = {
           id: string
           invoice_prefix: string | null
           legal_form: string | null
+          logo_url: string | null
           name: string
           payment_delay: number | null
           phone: string | null
@@ -99,6 +100,7 @@ export type Database = {
           id?: string
           invoice_prefix?: string | null
           legal_form?: string | null
+          logo_url?: string | null
           name?: string
           payment_delay?: number | null
           phone?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           id?: string
           invoice_prefix?: string | null
           legal_form?: string | null
+          logo_url?: string | null
           name?: string
           payment_delay?: number | null
           phone?: string | null
@@ -153,6 +156,7 @@ export type Database = {
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
           tax: number
+          title: string | null
           total: number
           updated_at: string | null
           user_id: string
@@ -169,6 +173,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax?: number
+          title?: string | null
           total?: number
           updated_at?: string | null
           user_id: string
@@ -185,6 +190,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax?: number
+          title?: string | null
           total?: number
           updated_at?: string | null
           user_id?: string

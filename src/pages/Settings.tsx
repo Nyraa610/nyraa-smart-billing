@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Save, Building2, Mail, Phone, MapPin, Globe, CreditCard, Search, Loader2 } from "lucide-react";
+import { Save, Building2, Mail, Phone, MapPin, Globe, CreditCard, Search, Loader2, Upload, X, Image } from "lucide-react";
 import { useSupabaseCompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchCompanyBySiret, formatSiret } from "@/utils/siretApi";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsPage() {
   const { companyInfo, loading, saveCompanyInfo } = useSupabaseCompanyInfo();
@@ -15,8 +17,10 @@ export default function SettingsPage() {
   const [siretSearch, setSiretSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
-  // Sync local state when companyInfo loads
   useEffect(() => {
     setLocalInfo(companyInfo);
   }, [companyInfo]);
@@ -46,6 +50,66 @@ export default function SettingsPage() {
     } finally { setIsSearching(false); }
   };
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("Veuillez sélectionner une image");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("L'image ne doit pas dépasser 2 Mo");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/logo.${fileExt}`;
+
+      // Delete old logo if exists
+      if (localInfo.logo_url) {
+        const oldPath = localInfo.logo_url.split('/').slice(-2).join('/');
+        await supabase.storage.from('company-logos').remove([oldPath]);
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      setLocalInfo({ ...localInfo, logo_url: publicUrl });
+      toast.success("Logo téléchargé");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur lors du téléchargement");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!user || !localInfo.logo_url) return;
+
+    try {
+      const path = localInfo.logo_url.split('/').slice(-2).join('/');
+      await supabase.storage.from('company-logos').remove([path]);
+      setLocalInfo({ ...localInfo, logo_url: '' });
+      toast.success("Logo supprimé");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur lors de la suppression");
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     await saveCompanyInfo(localInfo);
@@ -62,6 +126,66 @@ export default function SettingsPage() {
         <div className="animate-fade-in">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Paramètres</h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">Configurez les informations de votre entreprise</p>
+        </div>
+
+        {/* Logo Upload */}
+        <div className="bg-card rounded-2xl border shadow-sm p-4 md:p-6 space-y-4 animate-slide-up">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
+              <Image className="text-primary-foreground" size={20} />
+            </div>
+            <div>
+              <h2 className="text-base md:text-lg font-semibold">Logo de l'entreprise</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">Apparaîtra sur vos factures et devis</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {localInfo.logo_url ? (
+              <div className="relative">
+                <img 
+                  src={localInfo.logo_url} 
+                  alt="Logo entreprise" 
+                  className="w-24 h-24 object-contain rounded-lg border bg-white"
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6"
+                  onClick={handleRemoveLogo}
+                >
+                  <X size={14} />
+                </Button>
+              </div>
+            ) : (
+              <div className="w-24 h-24 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center bg-muted/50">
+                <Image className="text-muted-foreground" size={32} />
+              </div>
+            )}
+            
+            <div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleLogoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <Upload size={16} className="mr-2" />
+                )}
+                {localInfo.logo_url ? 'Changer le logo' : 'Télécharger un logo'}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPG jusqu'à 2 Mo</p>
+            </div>
+          </div>
         </div>
 
         {/* SIRET Search */}

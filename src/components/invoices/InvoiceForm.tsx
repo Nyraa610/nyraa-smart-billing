@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Client } from "@/hooks/useSupabaseClients";
-import { InvoiceItem, InvoiceStatus } from "@/hooks/useSupabaseInvoices";
+import { Invoice, InvoiceItem, InvoiceStatus } from "@/hooks/useSupabaseInvoices";
 import { CompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
 
 interface InvoiceFormProps {
@@ -16,6 +16,7 @@ interface InvoiceFormProps {
   onSave: (invoice: {
     client_id: string | null;
     invoice_number: string;
+    title: string | null;
     issue_date: string;
     due_date: string;
     items: InvoiceItem[];
@@ -25,19 +26,42 @@ interface InvoiceFormProps {
     status: InvoiceStatus;
     notes: string | null;
   }) => void;
+  onUpdate?: (id: string, invoice: Partial<Invoice>) => Promise<boolean>;
   clients: Client[];
   companyInfo: CompanyInfo;
+  editInvoice?: Invoice | null;
 }
 
-export function InvoiceForm({ open, onClose, onSave, clients, companyInfo }: InvoiceFormProps) {
+export function InvoiceForm({ open, onClose, onSave, onUpdate, clients, companyInfo, editInvoice }: InvoiceFormProps) {
   const [clientId, setClientId] = useState<string>("");
-  const [invoiceNumber, setInvoiceNumber] = useState(`${companyInfo.invoice_prefix}${Date.now().toString().slice(-6)}`);
-  const [dueDate, setDueDate] = useState(() => {
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+
+  const isEditMode = !!editInvoice;
+
+  useEffect(() => {
+    if (editInvoice) {
+      setClientId(editInvoice.client_id || "");
+      setInvoiceNumber(editInvoice.invoice_number);
+      setTitle(editInvoice.title || "");
+      setDueDate(editInvoice.due_date);
+      setItems(editInvoice.items.length > 0 ? editInvoice.items : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    } else {
+      resetForm();
+    }
+  }, [editInvoice, open]);
+
+  const resetForm = () => {
+    setClientId("");
+    setTitle("");
+    setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setInvoiceNumber(`${companyInfo.invoice_prefix}${Date.now().toString().slice(-6)}`);
     const d = new Date();
     d.setDate(d.getDate() + (companyInfo.payment_delay || 30));
-    return d.toISOString().split('T')[0];
-  });
-  const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setDueDate(d.toISOString().split('T')[0]);
+  };
 
   const addItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0, total: 0 }]);
@@ -68,7 +92,7 @@ export function InvoiceForm({ open, onClose, onSave, clients, companyInfo }: Inv
   const tax = subtotal * (companyInfo.tax_rate / 100);
   const total = subtotal + tax;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!clientId) {
       toast.error("Veuillez sélectionner un client");
       return;
@@ -79,38 +103,51 @@ export function InvoiceForm({ open, onClose, onSave, clients, companyInfo }: Inv
       return;
     }
 
-    onSave({
-      client_id: clientId,
-      invoice_number: invoiceNumber,
-      issue_date: new Date().toISOString().split('T')[0],
-      due_date: dueDate,
-      items,
-      subtotal,
-      tax,
-      total,
-      status: 'non_reglee',
-      notes: null,
-    });
-
-    resetForm();
-    onClose();
-  };
-
-  const resetForm = () => {
-    setClientId("");
-    setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
-    setInvoiceNumber(`${companyInfo.invoice_prefix}${Date.now().toString().slice(-6)}`);
+    if (isEditMode && editInvoice && onUpdate) {
+      const success = await onUpdate(editInvoice.id, {
+        client_id: clientId,
+        invoice_number: invoiceNumber,
+        title: title || null,
+        due_date: dueDate,
+        items,
+        subtotal,
+        tax,
+        total,
+      });
+      if (success) {
+        toast.success('Facture modifiée avec succès');
+        onClose();
+      }
+    } else {
+      onSave({
+        client_id: clientId,
+        invoice_number: invoiceNumber,
+        title: title || null,
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: dueDate,
+        items,
+        subtotal,
+        tax,
+        total,
+        status: 'non_reglee',
+        notes: null,
+      });
+      resetForm();
+      onClose();
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Nouvelle Facture</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {isEditMode ? 'Modifier la Facture' : 'Nouvelle Facture'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Numéro</Label>
               <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
@@ -127,6 +164,17 @@ export function InvoiceForm({ open, onClose, onSave, clients, companyInfo }: Inv
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Objet / Titre de la facture</Label>
+              <Input 
+                placeholder="Ex: Prestation de développement web" 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+              />
             </div>
             <div className="space-y-2">
               <Label>Échéance</Label>
@@ -189,7 +237,9 @@ export function InvoiceForm({ open, onClose, onSave, clients, companyInfo }: Inv
 
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="outline" onClick={onClose}>Annuler</Button>
-            <Button onClick={handleSave} className="gradient-primary">Enregistrer</Button>
+            <Button onClick={handleSave} className="gradient-primary">
+              {isEditMode ? 'Enregistrer les modifications' : 'Enregistrer'}
+            </Button>
           </div>
         </div>
       </DialogContent>

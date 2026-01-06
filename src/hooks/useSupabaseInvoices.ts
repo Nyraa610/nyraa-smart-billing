@@ -17,6 +17,7 @@ export interface Invoice {
   id: string;
   client_id: string | null;
   invoice_number: string;
+  title: string | null;
   issue_date: string;
   due_date: string;
   items: InvoiceItem[];
