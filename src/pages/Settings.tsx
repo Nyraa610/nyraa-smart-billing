@@ -67,12 +67,20 @@ export default function SettingsPage() {
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/logo.${fileExt}`;
+      const timestamp = Date.now();
+      const filePath = `${user.id}/logo_${timestamp}.${fileExt}`;
 
       // Delete old logo if exists
       if (localInfo.logo_url) {
-        const oldPath = localInfo.logo_url.split('/').slice(-2).join('/');
-        await supabase.storage.from('company-logos').remove([oldPath]);
+        try {
+          const urlParts = localInfo.logo_url.split('/company-logos/');
+          if (urlParts[1]) {
+            const oldPath = urlParts[1].split('?')[0];
+            await supabase.storage.from('company-logos').remove([oldPath]);
+          }
+        } catch (e) {
+          console.log('Old logo cleanup failed:', e);
+        }
       }
 
       const { error: uploadError } = await supabase.storage
@@ -85,7 +93,9 @@ export default function SettingsPage() {
         .from('company-logos')
         .getPublicUrl(filePath);
 
-      setLocalInfo({ ...localInfo, logo_url: publicUrl });
+      // Add cache-busting query param
+      const logoUrlWithTimestamp = `${publicUrl}?t=${timestamp}`;
+      setLocalInfo({ ...localInfo, logo_url: logoUrlWithTimestamp });
       toast.success("Logo téléchargé");
     } catch (error) {
       console.error(error);
