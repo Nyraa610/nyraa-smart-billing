@@ -236,55 +236,50 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
   }
   
   // === MENTIONS LÉGALES ===
-  finalY = paymentBoxY + paymentBoxHeight + 15;
+  finalY = paymentBoxY + paymentBoxHeight + 10;
+  
+  const pageHeight = 297; // A4 height in mm
+  const footerSpace = 20; // Espace pour le message Nyraa
+  const requiredSpace = 45; // Espace nécessaire pour les mentions légales
+  
+  // Vérifier si on a assez de place, sinon nouvelle page
+  if (finalY + requiredSpace + footerSpace > pageHeight) {
+    doc.addPage();
+    finalY = 20;
+  }
   
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('Mentions légales', margin, finalY);
-  finalY += 6;
+  finalY += 5;
   
-  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(7);
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.setFontSize(6.5);
   doc.setFont('helvetica', 'normal');
   
   // Pénalités de retard
-  doc.setFont('helvetica', 'bold');
-  doc.text('Pénalités de retard : ', margin, finalY);
-  doc.setFont('helvetica', 'normal');
-  const penaltyText = "En cas de retard de paiement, des pénalités seront appliquées au taux de trois fois le taux d'intérêt légal en vigueur, ainsi";
-  doc.text(penaltyText, margin + 28, finalY);
-  finalY += 3.5;
-  doc.text("qu'une indemnité forfaitaire de recouvrement de 40 euros (articles L441-6 et D441-5 du Code de commerce).", margin, finalY);
-  finalY += 5;
+  doc.text("• Pénalités de retard : En cas de retard de paiement, des pénalités seront appliquées au taux de trois fois le taux d'intérêt légal, ainsi qu'une", margin, finalY);
+  finalY += 3;
+  doc.text("  indemnité forfaitaire de recouvrement de 40€ (art. L441-6 et D441-5 du Code de commerce).", margin, finalY);
+  finalY += 4;
   
   // Escompte
-  doc.setFont('helvetica', 'bold');
-  doc.text('Escompte : ', margin, finalY);
-  doc.setFont('helvetica', 'normal');
-  doc.text("Aucun escompte ne sera accordé en cas de paiement anticipé.", margin + 18, finalY);
-  finalY += 5;
+  doc.text("• Escompte : Aucun escompte ne sera accordé en cas de paiement anticipé.", margin, finalY);
+  finalY += 4;
   
   // Réserve de propriété
-  doc.setFont('helvetica', 'bold');
-  doc.text('Réserve de propriété : ', margin, finalY);
-  doc.setFont('helvetica', 'normal');
-  doc.text("Les marchandises demeurent la propriété du vendeur jusqu'au paiement intégral du prix.", margin + 35, finalY);
-  finalY += 5;
+  doc.text("• Réserve de propriété : Les marchandises demeurent la propriété du vendeur jusqu'au paiement intégral du prix.", margin, finalY);
+  finalY += 4;
   
   // Micro-entreprise
-  doc.setFont('helvetica', 'bold');
-  doc.text('Micro-entreprise : ', margin, finalY);
-  doc.setFont('helvetica', 'normal');
-  doc.text("Dispensée d'immatriculation au registre du commerce et des sociétés et au répertoire des métiers.", margin + 30, finalY);
-  finalY += 10;
+  doc.text("• Micro-entreprise : Dispensée d'immatriculation au RCS et au répertoire des métiers.", margin, finalY);
   
   // === MESSAGE NYRAA BILLING (en bas de page fixe) ===
-  const pageHeight = 297; // A4 height in mm
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
-  doc.text('Facture générée par Nyraa Billing', pageWidth / 2, pageHeight - 10, { align: 'center' });
+  doc.text('Facture générée par Nyraa Billing', pageWidth / 2, pageHeight - 8, { align: 'center' });
   
   doc.save(`${invoice.invoice_number}.pdf`);
 }
