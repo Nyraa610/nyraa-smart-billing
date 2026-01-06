@@ -42,7 +42,8 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
   doc.setFont('helvetica', 'normal');
   
   if (company.legal_form) {
-    doc.text(company.legal_form, margin, yPos);
+    const legalForm = company.legal_form === 'Entreprise individuelle' ? 'Micro-entreprise' : company.legal_form;
+    doc.text(legalForm, margin, yPos);
     yPos += 5;
   }
   
@@ -279,7 +280,7 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
-  doc.text('Facture générée par Nyraa Billing', pageWidth / 2, pageHeight - 8, { align: 'center' });
+  doc.text("Facture générée par l'application Nyraa Billing", pageWidth / 2, pageHeight - 8, { align: 'center' });
   
   doc.save(`${invoice.invoice_number}.pdf`);
 }
