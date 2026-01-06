@@ -4,15 +4,16 @@ import { Invoice } from '@/hooks/useSupabaseInvoices';
 import { Quote } from '@/hooks/useSupabaseQuotes';
 import { CompanyInfo } from '@/hooks/useSupabaseCompanyInfo';
 
-// Couleurs du thème
+// Couleurs Nyraa Digital - Style Premium
 const COLORS = {
-  primary: { r: 139, g: 92, b: 246 },      // Violet
-  secondary: { r: 236, g: 72, b: 153 },    // Rose/Magenta
-  dark: { r: 24, g: 24, b: 27 },           // Fond sombre
-  text: { r: 63, g: 63, b: 70 },           // Texte principal
-  muted: { r: 113, g: 113, b: 122 },       // Texte secondaire
-  light: { r: 250, g: 250, b: 250 },       // Fond clair
-  accent: { r: 41, g: 171, b: 164 },       // Teal pour les devis
+  primary: { r: 139, g: 92, b: 246 },      // Violet Nyraa
+  secondary: { r: 168, g: 85, b: 247 },    // Violet clair
+  accent: { r: 236, g: 72, b: 153 },       // Rose/Magenta
+  dark: { r: 15, g: 15, b: 20 },           // Fond très sombre
+  text: { r: 30, g: 30, b: 35 },           // Texte principal
+  muted: { r: 100, g: 100, b: 110 },       // Texte secondaire
+  light: { r: 250, g: 250, b: 252 },       // Fond clair
+  white: { r: 255, g: 255, b: 255 },
 };
 
 function drawRoundedRect(doc: jsPDF, x: number, y: number, w: number, h: number, r: number, color: {r: number, g: number, b: number}) {
@@ -20,140 +21,118 @@ function drawRoundedRect(doc: jsPDF, x: number, y: number, w: number, h: number,
   doc.roundedRect(x, y, w, h, r, r, 'F');
 }
 
-function addGradientHeader(doc: jsPDF, title: string, isPrimary: boolean = true) {
-  const color = isPrimary ? COLORS.primary : COLORS.accent;
+function addNyraaHeader(doc: jsPDF, company: CompanyInfo, documentType: 'FACTURE' | 'DEVIS') {
+  // Fond dégradé premium
+  doc.setFillColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.rect(0, 0, 210, 55, 'F');
   
-  // Header background
-  doc.setFillColor(color.r, color.g, color.b);
-  doc.rect(0, 0, 210, 50, 'F');
+  // Bande accent en bas du header
+  doc.setFillColor(COLORS.accent.r, COLORS.accent.g, COLORS.accent.b);
+  doc.rect(0, 52, 210, 3, 'F');
   
-  // Subtle gradient overlay effect
-  doc.setFillColor(color.r - 20, color.g - 20, color.b - 20);
-  doc.rect(0, 45, 210, 5, 'F');
-  
-  return color;
-}
-
-export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void {
-  const doc = new jsPDF();
-  const primaryColor = COLORS.primary;
-  
-  // Header with gradient effect
-  addGradientHeader(doc, 'FACTURE', true);
-  
-  // Company name in header
+  // Nom de l'entreprise - Grand et bold
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
-  doc.text(company.name.toUpperCase(), 20, 22);
+  doc.text(company.name.toUpperCase(), 20, 25);
   
-  // Company tagline/info
+  // Infos entreprise sous le nom
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  const headerInfo = [];
-  if (company.address) headerInfo.push(company.address);
-  if (company.city) headerInfo.push(company.city);
-  doc.text(headerInfo.join(' • '), 20, 32);
+  const headerLines = [];
+  if (company.address) headerLines.push(company.address);
+  if (company.postal_code || company.city) headerLines.push(`${company.postal_code || ''} ${company.city || ''}`.trim());
+  headerLines.forEach((line, i) => {
+    doc.text(line, 20, 34 + (i * 6));
+  });
   
+  // Contact
   if (company.phone || company.email) {
     const contactInfo = [];
     if (company.phone) contactInfo.push(company.phone);
     if (company.email) contactInfo.push(company.email);
-    doc.text(contactInfo.join(' • '), 20, 40);
+    doc.text(contactInfo.join(' • '), 20, 48);
   }
   
-  // Invoice badge
-  drawRoundedRect(doc, 140, 55, 55, 25, 3, primaryColor);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('FACTURE', 167.5, 70, { align: 'center' });
+  // Badge du type de document
+  const badgeColor = documentType === 'FACTURE' ? COLORS.white : { r: 240, g: 240, b: 245 };
+  drawRoundedRect(doc, 145, 15, 50, 25, 4, badgeColor);
   
-  // Invoice details card
-  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(11);
+  doc.setTextColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(`N° ${invoice.invoice_number}`, 140, 90);
+  doc.text(documentType, 170, 31, { align: 'center' });
+}
+
+export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void {
+  const doc = new jsPDF();
+  
+  // Header Nyraa
+  addNyraaHeader(doc, company, 'FACTURE');
+  
+  // Numéro et dates - Card élégante
+  drawRoundedRect(doc, 130, 60, 65, 35, 4, { r: 248, g: 248, b: 252 });
+  doc.setDrawColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(130, 60, 65, 35, 4, 4, 'S');
+  
+  doc.setTextColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`N° ${invoice.invoice_number}`, 162.5, 72, { align: 'center' });
+  
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date: ${new Date(invoice.issue_date).toLocaleDateString('fr-FR')}`, 162.5, 82, { align: 'center' });
+  doc.text(`Échéance: ${new Date(invoice.due_date).toLocaleDateString('fr-FR')}`, 162.5, 90, { align: 'center' });
+  
+  // Section Émetteur
+  drawRoundedRect(doc, 20, 60, 4, 35, 2, COLORS.primary);
+  
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ÉMETTEUR', 28, 68);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text(`Émise le ${new Date(invoice.issue_date).toLocaleDateString('fr-FR')}`, 140, 97);
-  doc.text(`Échéance: ${new Date(invoice.due_date).toLocaleDateString('fr-FR')}`, 140, 104);
+  let y = 76;
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+  doc.text(company.name, 28, y); y += 5;
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  if (company.address) { doc.text(company.address, 28, y); y += 5; }
+  if (company.postal_code || company.city) { doc.text(`${company.postal_code || ''} ${company.city || ''}`.trim(), 28, y); y += 5; }
+  if (company.siret) { doc.text(`SIRET: ${company.siret}`, 28, y); y += 5; }
+  if (company.tva_number) { doc.text(`TVA: ${company.tva_number}`, 28, y); }
   
-  // Émetteur section with icon-like decoration
-  doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.rect(20, 58, 3, 12, 'F');
+  // Section Client
+  const clientStartY = 105;
+  drawRoundedRect(doc, 20, clientStartY, 4, 35, 2, COLORS.accent);
   
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('ÉMETTEUR', 27, 65);
+  doc.text('CLIENT', 28, clientStartY + 8);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  let emitterY = 73;
-  doc.text(company.name, 27, emitterY);
-  emitterY += 5;
-  if (company.address) {
-    doc.text(company.address, 27, emitterY);
-    emitterY += 5;
-  }
-  if (company.postal_code || company.city) {
-    doc.text(`${company.postal_code || ''} ${company.city || ''}`.trim(), 27, emitterY);
-    emitterY += 5;
-  }
-  if (company.siret) {
-    doc.text(`SIRET: ${company.siret}`, 27, emitterY);
-    emitterY += 5;
-  }
-  if (company.tva_number) {
-    doc.text(`TVA: ${company.tva_number}`, 27, emitterY);
-    emitterY += 5;
-  }
-  
-  // Client section with decoration
-  doc.setFillColor(COLORS.secondary.r, COLORS.secondary.g, COLORS.secondary.b);
-  doc.rect(20, emitterY + 5, 3, 12, 'F');
-  
-  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CLIENT', 27, emitterY + 12);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  let clientY = emitterY + 20;
-  
+  let clientY = clientStartY + 16;
   const clientName = invoice.client?.name || 'Client';
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFont('helvetica', 'bold');
-  doc.text(clientName, 27, clientY);
-  doc.setFont('helvetica', 'normal');
+  doc.text(clientName, 28, clientY); clientY += 5;
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  clientY += 5;
+  if (invoice.client?.address) { doc.text(invoice.client.address, 28, clientY); clientY += 5; }
+  if (invoice.client?.postal_code || invoice.client?.city) { 
+    doc.text(`${invoice.client?.postal_code || ''} ${invoice.client?.city || ''}`.trim(), 28, clientY); 
+    clientY += 5; 
+  }
+  if (invoice.client?.email) { doc.text(invoice.client.email, 28, clientY); clientY += 5; }
+  if (invoice.client?.siret) { doc.text(`SIRET: ${invoice.client.siret}`, 28, clientY); }
   
-  if (invoice.client?.address) {
-    doc.text(invoice.client.address, 27, clientY);
-    clientY += 5;
-  }
-  if (invoice.client?.postal_code || invoice.client?.city) {
-    doc.text(`${invoice.client?.postal_code || ''} ${invoice.client?.city || ''}`.trim(), 27, clientY);
-    clientY += 5;
-  }
-  if (invoice.client?.email) {
-    doc.text(invoice.client.email, 27, clientY);
-    clientY += 5;
-  }
-  if (invoice.client?.siret) {
-    doc.text(`SIRET: ${invoice.client.siret}`, 27, clientY);
-    clientY += 5;
-  }
-  
-  // Items table with modern styling
-  const tableStartY = Math.max(clientY + 15, 145);
+  // Tableau des prestations
+  const tableStartY = 150;
   const tableData = invoice.items.map(item => [
     item.description,
     item.quantity.toString(),
@@ -167,23 +146,23 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
     body: tableData,
     theme: 'plain',
     headStyles: {
-      fillColor: [primaryColor.r, primaryColor.g, primaryColor.b],
+      fillColor: [COLORS.primary.r, COLORS.primary.g, COLORS.primary.b],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 9,
-      cellPadding: 8,
+      cellPadding: 10,
     },
     styles: {
       fontSize: 9,
-      cellPadding: 8,
-      lineColor: [230, 230, 230],
-      lineWidth: 0.1,
+      cellPadding: 10,
+      lineColor: [230, 230, 235],
+      lineWidth: 0.3,
     },
     bodyStyles: {
       textColor: [COLORS.text.r, COLORS.text.g, COLORS.text.b],
     },
     alternateRowStyles: {
-      fillColor: [248, 250, 252],
+      fillColor: [250, 250, 252],
     },
     columnStyles: {
       0: { cellWidth: 80 },
@@ -193,223 +172,152 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
     },
   });
   
-  // Totals section with modern card
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  // Totaux - Card premium
+  const finalY = (doc as any).lastAutoTable.finalY + 15;
   
-  // Totals background
-  drawRoundedRect(doc, 120, finalY - 5, 75, 45, 4, { r: 248, g: 250, b: 252 });
+  drawRoundedRect(doc, 115, finalY - 5, 80, 55, 6, { r: 250, g: 250, b: 252 });
+  doc.setDrawColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setLineWidth(1);
+  doc.roundedRect(115, finalY - 5, 80, 55, 6, 6, 'S');
   
   doc.setFontSize(10);
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text('Total HT', 125, finalY + 5);
+  doc.text('Total HT', 122, finalY + 8);
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text(`${Number(invoice.subtotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 5, { align: 'right' });
+  doc.text(`${Number(invoice.subtotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 188, finalY + 8, { align: 'right' });
   
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text(`TVA (${company.tax_rate || 20}%)`, 125, finalY + 14);
+  doc.text(`TVA (${company.tax_rate || 20}%)`, 122, finalY + 18);
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text(`${Number(invoice.tax).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 14, { align: 'right' });
+  doc.text(`${Number(invoice.tax).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 188, finalY + 18, { align: 'right' });
   
-  // Separator line
-  doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.setLineWidth(0.8);
-  doc.line(125, finalY + 20, 190, finalY + 20);
+  // Ligne de séparation gradient
+  doc.setDrawColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setLineWidth(1.5);
+  doc.line(122, finalY + 25, 188, finalY + 25);
   
-  // Total TTC
-  doc.setFontSize(13);
+  // Total TTC - Grand et premium
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text('Total TTC', 125, finalY + 32);
-  doc.text(`${Number(invoice.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 32, { align: 'right' });
+  doc.setTextColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.text('Total TTC', 122, finalY + 40);
+  doc.text(`${Number(invoice.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 188, finalY + 40, { align: 'right' });
   
-  // Payment conditions
+  // Conditions de paiement
+  const conditionsY = finalY + 65;
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('CONDITIONS DE PAIEMENT', 20, finalY + 55);
+  doc.text('CONDITIONS DE PAIEMENT', 20, conditionsY);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text(`Paiement à ${company.payment_delay || 30} jours à compter de la date de facture.`, 20, finalY + 62);
-  doc.text('En cas de retard de paiement, une pénalité de 3 fois le taux d\'intérêt légal sera appliquée,', 20, finalY + 68);
-  doc.text('ainsi qu\'une indemnité forfaitaire de 40€ pour frais de recouvrement.', 20, finalY + 74);
+  doc.text(`Paiement à ${company.payment_delay || 30} jours à compter de la date de facture.`, 20, conditionsY + 7);
+  doc.text('En cas de retard, pénalités de 3x le taux d\'intérêt légal + indemnité forfaitaire de 40€.', 20, conditionsY + 13);
   
-  // Bank details
+  // Coordonnées bancaires
   if (company.iban || company.bic) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-    doc.text('COORDONNÉES BANCAIRES', 20, finalY + 85);
+    doc.text('COORDONNÉES BANCAIRES', 20, conditionsY + 25);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-    let bankY = finalY + 92;
-    if (company.bank_name) {
-      doc.text(`Banque: ${company.bank_name}`, 20, bankY);
-      bankY += 5;
-    }
-    if (company.iban) {
-      doc.text(`IBAN: ${company.iban}`, 20, bankY);
-      bankY += 5;
-    }
-    if (company.bic) {
-      doc.text(`BIC: ${company.bic}`, 20, bankY);
-    }
+    let bankY = conditionsY + 32;
+    if (company.bank_name) { doc.text(`Banque: ${company.bank_name}`, 20, bankY); bankY += 5; }
+    if (company.iban) { doc.text(`IBAN: ${company.iban}`, 20, bankY); bankY += 5; }
+    if (company.bic) { doc.text(`BIC: ${company.bic}`, 20, bankY); }
   }
   
-  // Footer
-  doc.setFillColor(248, 250, 252);
-  doc.rect(0, 272, 210, 25, 'F');
+  // Footer premium
+  doc.setFillColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.rect(0, 280, 210, 17, 'F');
   
-  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   
-  let footerY = 278;
-  const footerLines: string[] = [];
+  let footerText = company.name;
+  if (company.legal_form) footerText += ` • ${company.legal_form}`;
+  if (company.capital) footerText += ` • Capital: ${company.capital} €`;
+  if (company.siret) footerText += ` • SIRET: ${company.siret}`;
   
-  let companyLine = company.name;
-  if (company.legal_form) companyLine += ` - ${company.legal_form}`;
-  if (company.capital) companyLine += ` au capital de ${company.capital} €`;
-  footerLines.push(companyLine);
-  
-  const legalLine = [];
-  if (company.siret) legalLine.push(`SIRET: ${company.siret}`);
-  if (company.rcs) legalLine.push(`RCS: ${company.rcs}`);
-  if (company.ape_code) legalLine.push(`Code APE: ${company.ape_code}`);
-  if (company.tva_number) legalLine.push(`N° TVA: ${company.tva_number}`);
-  
-  if (legalLine.length > 0) footerLines.push(legalLine.join(' • '));
-  footerLines.push('TVA non applicable, art. 293 B du CGI');
-  
-  footerLines.forEach((line, i) => {
-    doc.text(line, 105, footerY + (i * 4), { align: 'center' });
-  });
+  doc.text(footerText, 105, 287, { align: 'center' });
+  doc.text('TVA non applicable, art. 293 B du CGI', 105, 293, { align: 'center' });
   
   doc.save(`${invoice.invoice_number}.pdf`);
 }
 
 export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   const doc = new jsPDF();
-  const accentColor = COLORS.accent;
   
-  // Header
-  addGradientHeader(doc, 'DEVIS', false);
+  // Header Nyraa
+  addNyraaHeader(doc, company, 'DEVIS');
   
-  // Company name in header
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  // Numéro et dates - Card élégante
+  drawRoundedRect(doc, 130, 60, 65, 35, 4, { r: 248, g: 248, b: 252 });
+  doc.setDrawColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(130, 60, 65, 35, 4, 4, 'S');
+  
+  doc.setTextColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text(company.name.toUpperCase(), 20, 22);
+  doc.text(`N° ${quote.quote_number}`, 162.5, 72, { align: 'center' });
   
-  // Company tagline/info
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date: ${new Date(quote.issue_date).toLocaleDateString('fr-FR')}`, 162.5, 82, { align: 'center' });
+  doc.text(`Valide: ${new Date(quote.valid_until).toLocaleDateString('fr-FR')}`, 162.5, 90, { align: 'center' });
+  
+  // Section Émetteur
+  drawRoundedRect(doc, 20, 60, 4, 35, 2, COLORS.primary);
+  
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  const headerInfo = [];
-  if (company.address) headerInfo.push(company.address);
-  if (company.city) headerInfo.push(company.city);
-  doc.text(headerInfo.join(' • '), 20, 32);
-  
-  if (company.phone || company.email) {
-    const contactInfo = [];
-    if (company.phone) contactInfo.push(company.phone);
-    if (company.email) contactInfo.push(company.email);
-    doc.text(contactInfo.join(' • '), 20, 40);
-  }
-  
-  // Quote badge
-  drawRoundedRect(doc, 150, 55, 45, 25, 3, accentColor);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('DEVIS', 172.5, 70, { align: 'center' });
-  
-  // Quote details
-  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`N° ${quote.quote_number}`, 140, 90);
+  doc.text('ÉMETTEUR', 28, 68);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
+  let y = 76;
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+  doc.text(company.name, 28, y); y += 5;
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text(`Émis le ${new Date(quote.issue_date).toLocaleDateString('fr-FR')}`, 140, 97);
-  doc.text(`Valide jusqu'au: ${new Date(quote.valid_until).toLocaleDateString('fr-FR')}`, 140, 104);
+  if (company.address) { doc.text(company.address, 28, y); y += 5; }
+  if (company.postal_code || company.city) { doc.text(`${company.postal_code || ''} ${company.city || ''}`.trim(), 28, y); y += 5; }
+  if (company.siret) { doc.text(`SIRET: ${company.siret}`, 28, y); y += 5; }
+  if (company.tva_number) { doc.text(`TVA: ${company.tva_number}`, 28, y); }
   
-  // Émetteur section
-  doc.setFillColor(accentColor.r, accentColor.g, accentColor.b);
-  doc.rect(20, 58, 3, 12, 'F');
+  // Section Client
+  const clientStartY = 105;
+  drawRoundedRect(doc, 20, clientStartY, 4, 35, 2, COLORS.accent);
   
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('ÉMETTEUR', 27, 65);
+  doc.text('CLIENT', 28, clientStartY + 8);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  let emitterY = 73;
-  doc.text(company.name, 27, emitterY);
-  emitterY += 5;
-  if (company.address) {
-    doc.text(company.address, 27, emitterY);
-    emitterY += 5;
-  }
-  if (company.postal_code || company.city) {
-    doc.text(`${company.postal_code || ''} ${company.city || ''}`.trim(), 27, emitterY);
-    emitterY += 5;
-  }
-  if (company.siret) {
-    doc.text(`SIRET: ${company.siret}`, 27, emitterY);
-    emitterY += 5;
-  }
-  if (company.tva_number) {
-    doc.text(`TVA: ${company.tva_number}`, 27, emitterY);
-    emitterY += 5;
-  }
-  
-  // Client section
-  doc.setFillColor(COLORS.secondary.r, COLORS.secondary.g, COLORS.secondary.b);
-  doc.rect(20, emitterY + 5, 3, 12, 'F');
-  
-  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CLIENT', 27, emitterY + 12);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  let clientY = emitterY + 20;
-  
+  let clientY = clientStartY + 16;
   const clientName = quote.client?.name || 'Client';
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFont('helvetica', 'bold');
-  doc.text(clientName, 27, clientY);
-  doc.setFont('helvetica', 'normal');
+  doc.text(clientName, 28, clientY); clientY += 5;
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  clientY += 5;
+  if (quote.client?.address) { doc.text(quote.client.address, 28, clientY); clientY += 5; }
+  if (quote.client?.postal_code || quote.client?.city) { 
+    doc.text(`${quote.client?.postal_code || ''} ${quote.client?.city || ''}`.trim(), 28, clientY); 
+    clientY += 5; 
+  }
+  if (quote.client?.email) { doc.text(quote.client.email, 28, clientY); clientY += 5; }
+  if (quote.client?.siret) { doc.text(`SIRET: ${quote.client.siret}`, 28, clientY); }
   
-  if (quote.client?.address) {
-    doc.text(quote.client.address, 27, clientY);
-    clientY += 5;
-  }
-  if (quote.client?.postal_code || quote.client?.city) {
-    doc.text(`${quote.client?.postal_code || ''} ${quote.client?.city || ''}`.trim(), 27, clientY);
-    clientY += 5;
-  }
-  if (quote.client?.email) {
-    doc.text(quote.client.email, 27, clientY);
-    clientY += 5;
-  }
-  if (quote.client?.siret) {
-    doc.text(`SIRET: ${quote.client.siret}`, 27, clientY);
-    clientY += 5;
-  }
-  
-  // Items table
-  const tableStartY = Math.max(clientY + 15, 145);
+  // Tableau des prestations
+  const tableStartY = 150;
   const tableData = quote.items.map(item => [
     item.description,
     item.quantity.toString(),
@@ -423,23 +331,23 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
     body: tableData,
     theme: 'plain',
     headStyles: {
-      fillColor: [accentColor.r, accentColor.g, accentColor.b],
+      fillColor: [COLORS.primary.r, COLORS.primary.g, COLORS.primary.b],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 9,
-      cellPadding: 8,
+      cellPadding: 10,
     },
     styles: {
       fontSize: 9,
-      cellPadding: 8,
-      lineColor: [230, 230, 230],
-      lineWidth: 0.1,
+      cellPadding: 10,
+      lineColor: [230, 230, 235],
+      lineWidth: 0.3,
     },
     bodyStyles: {
       textColor: [COLORS.text.r, COLORS.text.g, COLORS.text.b],
     },
     alternateRowStyles: {
-      fillColor: [240, 253, 250],
+      fillColor: [250, 250, 252],
     },
     columnStyles: {
       0: { cellWidth: 80 },
@@ -449,85 +357,79 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
     },
   });
   
-  // Totals
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  // Totaux - Card premium
+  const finalY = (doc as any).lastAutoTable.finalY + 15;
   
-  drawRoundedRect(doc, 120, finalY - 5, 75, 45, 4, { r: 240, g: 253, b: 250 });
+  drawRoundedRect(doc, 115, finalY - 5, 80, 55, 6, { r: 250, g: 250, b: 252 });
+  doc.setDrawColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setLineWidth(1);
+  doc.roundedRect(115, finalY - 5, 80, 55, 6, 6, 'S');
   
   doc.setFontSize(10);
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text('Total HT', 125, finalY + 5);
+  doc.text('Total HT', 122, finalY + 8);
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text(`${Number(quote.subtotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 5, { align: 'right' });
+  doc.text(`${Number(quote.subtotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 188, finalY + 8, { align: 'right' });
   
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text(`TVA (${company.tax_rate || 20}%)`, 125, finalY + 14);
+  doc.text(`TVA (${company.tax_rate || 20}%)`, 122, finalY + 18);
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text(`${Number(quote.tax).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 14, { align: 'right' });
+  doc.text(`${Number(quote.tax).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 188, finalY + 18, { align: 'right' });
   
-  doc.setDrawColor(accentColor.r, accentColor.g, accentColor.b);
-  doc.setLineWidth(0.8);
-  doc.line(125, finalY + 20, 190, finalY + 20);
+  // Ligne de séparation gradient
+  doc.setDrawColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.setLineWidth(1.5);
+  doc.line(122, finalY + 25, 188, finalY + 25);
   
-  doc.setFontSize(13);
+  // Total TTC - Grand et premium
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(accentColor.r, accentColor.g, accentColor.b);
-  doc.text('Total TTC', 125, finalY + 32);
-  doc.text(`${Number(quote.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 190, finalY + 32, { align: 'right' });
+  doc.setTextColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.text('Total TTC', 122, finalY + 40);
+  doc.text(`${Number(quote.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`, 188, finalY + 40, { align: 'right' });
   
   // Conditions
+  const conditionsY = finalY + 65;
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('CONDITIONS', 20, finalY + 55);
+  doc.text('CONDITIONS', 20, conditionsY);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text(`Ce devis est valable ${company.payment_delay || 30} jours à compter de sa date d'émission.`, 20, finalY + 62);
-  doc.text('Pour acceptation, retournez ce devis signé avec la mention "Bon pour accord".', 20, finalY + 68);
+  doc.text(`Ce devis est valable ${company.payment_delay || 30} jours à compter de sa date d'émission.`, 20, conditionsY + 7);
+  doc.text('Pour acceptation, retournez ce devis signé avec la mention "Bon pour accord".', 20, conditionsY + 13);
   
-  // Signature zone
+  // Zone signature
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text('Signature client (précédée de "Bon pour accord"):', 20, finalY + 80);
+  doc.text('Signature client (précédée de "Bon pour accord"):', 20, conditionsY + 28);
   
   doc.setDrawColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
   doc.setLineWidth(0.3);
-  doc.roundedRect(20, finalY + 85, 80, 25, 2, 2);
+  doc.roundedRect(20, conditionsY + 33, 80, 25, 2, 2);
   
   doc.setFont('helvetica', 'normal');
-  doc.text('Date:', 110, finalY + 95);
-  doc.line(125, finalY + 95, 180, finalY + 95);
+  doc.text('Date:', 110, conditionsY + 45);
+  doc.line(125, conditionsY + 45, 180, conditionsY + 45);
   
-  // Footer
-  doc.setFillColor(240, 253, 250);
-  doc.rect(0, 272, 210, 25, 'F');
+  // Footer premium
+  doc.setFillColor(COLORS.primary.r, COLORS.primary.g, COLORS.primary.b);
+  doc.rect(0, 280, 210, 17, 'F');
   
-  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   
-  let footerY = 278;
-  const footerLines: string[] = [];
+  let footerText = company.name;
+  if (company.legal_form) footerText += ` • ${company.legal_form}`;
+  if (company.capital) footerText += ` • Capital: ${company.capital} €`;
+  if (company.siret) footerText += ` • SIRET: ${company.siret}`;
   
-  let companyLine = company.name;
-  if (company.legal_form) companyLine += ` - ${company.legal_form}`;
-  if (company.capital) companyLine += ` au capital de ${company.capital} €`;
-  footerLines.push(companyLine);
-  
-  const legalLine = [];
-  if (company.siret) legalLine.push(`SIRET: ${company.siret}`);
-  if (company.rcs) legalLine.push(`RCS: ${company.rcs}`);
-  if (company.ape_code) legalLine.push(`Code APE: ${company.ape_code}`);
-  if (company.tva_number) legalLine.push(`N° TVA: ${company.tva_number}`);
-  
-  if (legalLine.length > 0) footerLines.push(legalLine.join(' • '));
-  
-  footerLines.forEach((line, i) => {
-    doc.text(line, 105, footerY + (i * 4), { align: 'center' });
-  });
+  doc.text(footerText, 105, 287, { align: 'center' });
+  doc.text('Devis non contractuel jusqu\'à signature', 105, 293, { align: 'center' });
   
   doc.save(`${quote.quote_number}.pdf`);
 }
