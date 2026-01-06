@@ -83,7 +83,7 @@ export function useSupabaseCompanyInfo() {
         ape_code: data.ape_code || '',
         invoice_prefix: data.invoice_prefix || 'FACT-',
         quote_prefix: data.quote_prefix || 'DEV-',
-        tax_rate: Number(data.tax_rate) || 20,
+        tax_rate: Number(data.tax_rate ?? 0),
         payment_delay: data.payment_delay || 30,
         bank_name: data.bank_name || '',
         iban: data.iban || '',
