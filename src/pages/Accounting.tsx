@@ -1,10 +1,11 @@
 import { Layout } from "@/components/layout/Layout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useSupabaseTransactions } from "@/hooks/useSupabaseTransactions";
-import { TrendingUp, Wallet, BookOpen, Loader2, Receipt, Trash2 } from "lucide-react";
+import { TrendingUp, Wallet, BookOpen, Loader2, Receipt, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState } from "react";
+import { exportTransactionsToCSV } from "@/utils/csvExport";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,9 +47,26 @@ export default function AccountingPage() {
     <Layout>
       <div className="space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="animate-fade-in">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Comptabilité</h1>
-          <p className="text-muted-foreground mt-1 text-sm md:text-base">Livre de recettes - Micro-entreprise</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Comptabilité</h1>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base">Livre de recettes - Micro-entreprise</p>
+          </div>
+          <Button 
+            onClick={() => {
+              if (transactions.length === 0) {
+                toast.error('Aucune recette à exporter');
+                return;
+              }
+              exportTransactionsToCSV(transactions);
+              toast.success('Export CSV téléchargé');
+            }}
+            variant="outline"
+            className="gap-2"
+          >
+            <Download size={18} />
+            Exporter CSV
+          </Button>
         </div>
 
         {/* Stats */}
