@@ -235,6 +235,56 @@ export function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): void
     doc.text(`Banque : ${company.bank_name}`, margin + 5, paymentY);
   }
   
+  // === MENTIONS LÉGALES ===
+  finalY = paymentBoxY + paymentBoxHeight + 15;
+  
+  doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Mentions légales', margin, finalY);
+  finalY += 6;
+  
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  
+  // Pénalités de retard
+  doc.setFont('helvetica', 'bold');
+  doc.text('Pénalités de retard : ', margin, finalY);
+  doc.setFont('helvetica', 'normal');
+  const penaltyText = "En cas de retard de paiement, des pénalités seront appliquées au taux de trois fois le taux d'intérêt légal en vigueur, ainsi";
+  doc.text(penaltyText, margin + 28, finalY);
+  finalY += 3.5;
+  doc.text("qu'une indemnité forfaitaire de recouvrement de 40 euros (articles L441-6 et D441-5 du Code de commerce).", margin, finalY);
+  finalY += 5;
+  
+  // Escompte
+  doc.setFont('helvetica', 'bold');
+  doc.text('Escompte : ', margin, finalY);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Aucun escompte ne sera accordé en cas de paiement anticipé.", margin + 18, finalY);
+  finalY += 5;
+  
+  // Réserve de propriété
+  doc.setFont('helvetica', 'bold');
+  doc.text('Réserve de propriété : ', margin, finalY);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Les marchandises demeurent la propriété du vendeur jusqu'au paiement intégral du prix.", margin + 35, finalY);
+  finalY += 5;
+  
+  // Micro-entreprise
+  doc.setFont('helvetica', 'bold');
+  doc.text('Micro-entreprise : ', margin, finalY);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Dispensée d'immatriculation au registre du commerce et des sociétés et au répertoire des métiers.", margin + 30, finalY);
+  finalY += 10;
+  
+  // === MESSAGE NYRAA BILLING ===
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Facture générée par Nyraa Billing', pageWidth / 2, finalY, { align: 'center' });
+  
   doc.save(`${invoice.invoice_number}.pdf`);
 }
 
