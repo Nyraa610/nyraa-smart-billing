@@ -42,7 +42,7 @@ export default function SettingsPage() {
         toast.success("Informations pré-remplies");
       }
     } catch (error) {
-      toast.error("Erreur lors de la recherche");
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la recherche");
     } finally { setIsSearching(false); }
   };
 

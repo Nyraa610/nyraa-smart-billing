@@ -44,7 +44,7 @@ export function ClientForm({ open, onClose, onSave }: ClientFormProps) {
         toast.success("Entreprise trouvée");
       }
     } catch (error) {
-      toast.error("Erreur lors de la recherche");
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la recherche");
     } finally { setIsSearching(false); }
   };
 
