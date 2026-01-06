@@ -112,7 +112,8 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   }
   
   // === ENCADRÉ CLIENT ===
-  const clientBoxY = 60;
+  // Positionner le bloc client après les infos entreprise avec un minimum
+  const clientBoxY = Math.max(yPos + 10, 70);
   const clientBoxHeight = 35;
   
   // Bordure bleue gauche
