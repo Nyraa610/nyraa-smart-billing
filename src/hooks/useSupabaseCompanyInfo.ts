@@ -28,7 +28,7 @@ export interface CompanyInfo {
 }
 
 const defaultCompanyInfo: CompanyInfo = {
-  name: 'Nyraa Digital',
+  name: '',
   siret: '',
   tva_number: '',
   email: '',
@@ -43,7 +43,7 @@ const defaultCompanyInfo: CompanyInfo = {
   ape_code: '',
   invoice_prefix: 'FACT-',
   quote_prefix: 'DEV-',
-  tax_rate: 20,
+  tax_rate: 0,
   payment_delay: 30,
   bank_name: '',
   iban: '',
