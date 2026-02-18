@@ -13,6 +13,7 @@ import QuotesPage from "./pages/Quotes";
 import AccountingPage from "./pages/Accounting";
 import ClientsPage from "./pages/Clients";
 import SettingsPage from "./pages/Settings";
+import FinancePage from "./pages/Finance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/accounting" element={<ProtectedRoute><AccountingPage /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
