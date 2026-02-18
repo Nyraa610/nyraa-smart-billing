@@ -98,9 +98,16 @@ export default function FinancePage() {
 
   const config = ACTIVITY_CONFIG[activityType];
 
+  // Frais fixes mensuels
+  const FIXED_MONTHLY_EXPENSES = [
+    { label: "Carte bancaire professionnelle", amount: 10 },
+    { label: "Domiciliation", amount: 25 },
+  ];
+  const totalFixedMonthly = FIXED_MONTHLY_EXPENSES.reduce((s, e) => s + e.amount, 0);
+
   // Taux total déclaration URSSAF = cotisations + VL IR + CFP
   const totalRate = config.urssaf + config.vlIR + config.formation;
-  const totalRateClassique = config.urssaf + config.formation; // sans VL
+  const totalRateClassique = config.urssaf + config.formation;
 
   const filteredTransactions = useMemo(() => {
     const now = new Date();
@@ -121,6 +128,10 @@ export default function FinancePage() {
     [filteredTransactions]
   );
 
+  // Nombre de mois pour la période sélectionnée
+  const monthsInPeriod = period === "month" ? 1 : period === "quarter" ? 3 : period === "year" ? 12 : 12;
+  const totalFixedExpenses = totalFixedMonthly * monthsInPeriod;
+
   // Répartition trimestrielle du CA (année en cours)
   const quarterlyData = useMemo(() => {
     const now = new Date();
@@ -138,9 +149,11 @@ export default function FinancePage() {
           return d.getFullYear() === year && q.months.includes(d.getMonth());
         })
         .reduce((sum, t) => sum + Number(t.amount), 0);
-      return { ...q, ca, charges: Math.round(ca * totalRate) / 100 };
+      const chargesUrssaf = Math.round(ca * totalRate) / 100;
+      const fixedQ = totalFixedMonthly * 3;
+      return { ...q, ca, chargesUrssaf, fixedExpenses: fixedQ, total: chargesUrssaf + fixedQ };
     });
-  }, [transactions, totalRate]);
+  }, [transactions, totalRate, totalFixedMonthly]);
 
   // Calculs avec versement libératoire (VL)
   const urssafAmount = totalRevenue * (config.urssaf / 100);
@@ -157,8 +170,10 @@ export default function FinancePage() {
   const vlIsBetter = totalChargesVL <= totalChargesClassique;
   const savings = Math.abs(totalChargesVL - totalChargesClassique);
 
-  const netIncome = totalRevenue - totalChargesVL;
-  const chargesPercent = totalRevenue > 0 ? (totalChargesVL / totalRevenue) * 100 : 0;
+  // Total toutes charges confondues
+  const totalAllCharges = totalChargesVL + totalFixedExpenses;
+  const netIncome = totalRevenue - totalAllCharges;
+  const chargesPercent = totalRevenue > 0 ? (totalAllCharges / totalRevenue) * 100 : 0;
 
   const periodLabel = period === "month" ? "ce mois" : period === "quarter" ? "ce trimestre" : period === "year" ? "cette année" : "au total";
 
@@ -223,8 +238,9 @@ export default function FinancePage() {
                       <ArrowDownRight size={20} className="text-destructive" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Charges à payer ({totalRate}% du CA)</p>
-                      <p className="text-xl font-bold text-foreground">{formatEuro(totalChargesVL)}</p>
+                      <p className="text-xs text-muted-foreground">Total charges {periodLabel}</p>
+                      <p className="text-xl font-bold text-foreground">{formatEuro(totalAllCharges)}</p>
+                      <p className="text-xs text-muted-foreground">URSSAF {formatEuro(totalChargesVL)} + Frais {formatEuro(totalFixedExpenses)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -298,11 +314,13 @@ export default function FinancePage() {
                     <div key={q.label} className="p-4 rounded-xl bg-muted/50 space-y-2">
                       <p className="text-sm font-medium text-foreground">{q.label}</p>
                       <p className="text-xs text-muted-foreground">CA : {formatEuro(q.ca)}</p>
-                      <p className={`text-lg font-bold ${q.charges > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {formatEuro(q.charges)}
+                      <p className="text-xs text-muted-foreground">URSSAF : {formatEuro(q.chargesUrssaf)}</p>
+                      <p className="text-xs text-muted-foreground">Frais fixes : {formatEuro(q.fixedExpenses)}</p>
+                      <p className={`text-lg font-bold ${q.total > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {formatEuro(q.total)}
                       </p>
                       {q.ca === 0 && (
-                        <p className="text-xs text-muted-foreground italic">Pas de CA → 0 € à payer</p>
+                        <p className="text-xs text-muted-foreground italic">Pas de CA mais frais fixes à payer</p>
                       )}
                     </div>
                   ))}
@@ -371,9 +389,34 @@ export default function FinancePage() {
 
                   <Separator />
 
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-foreground font-medium">Sous-total URSSAF ({totalRate}%)</span>
+                    <span className="text-destructive font-semibold">{formatEuro(totalChargesVL)}</span>
+                  </div>
+
+                  <Separator />
+
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Frais fixes mensuels</p>
+                  {FIXED_MONTHLY_EXPENSES.map((expense) => (
+                    <div key={expense.label} className="flex items-start justify-between p-3 rounded-xl bg-muted/50">
+                      <div className="flex items-start gap-3">
+                        <Wallet size={18} className="text-warning mt-0.5" />
+                        <div>
+                          <p className="font-medium text-foreground text-sm">{expense.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{formatEuro(expense.amount)}/mois × {monthsInPeriod} mois</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-sm font-semibold shrink-0">
+                        {formatEuro(expense.amount * monthsInPeriod)}
+                      </Badge>
+                    </div>
+                  ))}
+
+                  <Separator />
+
                   <div className="flex items-center justify-between font-semibold">
-                    <span className="text-foreground">Total avec VL ({totalRate}%)</span>
-                    <span className="text-destructive text-lg">{formatEuro(totalChargesVL)}</span>
+                    <span className="text-foreground">Total toutes charges {periodLabel}</span>
+                    <span className="text-destructive text-lg">{formatEuro(totalAllCharges)}</span>
                   </div>
                 </CardContent>
               </Card>
