@@ -21,12 +21,48 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-type ActivityType = "services" | "commerce" | "liberal";
+type ActivityType = "services_bic" | "commerce" | "liberal";
 
-const ACTIVITY_CONFIG: Record<ActivityType, { label: string; urssaf: number; abattement: number }> = {
-  services: { label: "Prestations de services (BIC)", urssaf: 21.2, abattement: 50 },
-  commerce: { label: "Vente de marchandises (BIC)", urssaf: 12.3, abattement: 71 },
-  liberal: { label: "Activité libérale (BNC)", urssaf: 21.1, abattement: 34 },
+const ACTIVITY_CONFIG: Record<ActivityType, {
+  label: string;
+  urssaf: number;
+  urssafAcre: number;
+  abattement: number;
+  vlIR: number;
+  seuil: number;
+  seuilMajore: number;
+  formation: number;
+}> = {
+  services_bic: {
+    label: "Prestations de services (BIC)",
+    urssaf: 21.2,
+    urssafAcre: 10.6,
+    abattement: 50,
+    vlIR: 1.7,
+    seuil: 77700,
+    seuilMajore: 85800,
+    formation: 0.3,
+  },
+  commerce: {
+    label: "Achat/revente - Vente de marchandises",
+    urssaf: 12.3,
+    urssafAcre: 6.2,
+    abattement: 71,
+    vlIR: 1.0,
+    seuil: 188700,
+    seuilMajore: 188700,
+    formation: 0.1,
+  },
+  liberal: {
+    label: "Prestations de services (BNC / libéral)",
+    urssaf: 21.2,
+    urssafAcre: 10.6,
+    abattement: 34,
+    vlIR: 2.2,
+    seuil: 77700,
+    seuilMajore: 85800,
+    formation: 0.2,
+  },
 };
 
 // Barème IR 2024 (revenus 2023) - simplifié
@@ -57,7 +93,7 @@ function formatEuro(amount: number): string {
 export default function FinancePage() {
   const { transactions, loading } = useSupabaseTransactions();
   const { companyInfo } = useSupabaseCompanyInfo();
-  const [activityType, setActivityType] = useState<ActivityType>("services");
+  const [activityType, setActivityType] = useState<ActivityType>("services_bic");
   const [period, setPeriod] = useState<string>("year");
 
   const config = ACTIVITY_CONFIG[activityType];
@@ -99,7 +135,7 @@ export default function FinancePage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Finances</h1>
-            <p className="text-muted-foreground">Vue d'ensemble fiscale et financière</p>
+            <p className="text-muted-foreground">Estimations fiscales — Régime micro-entrepreneur</p>
           </div>
           <div className="flex items-center gap-3">
             <Select value={activityType} onValueChange={(v) => setActivityType(v as ActivityType)}>
@@ -217,7 +253,7 @@ export default function FinancePage() {
                     <ReceiptText size={18} className="text-primary" />
                     Détail des charges
                   </CardTitle>
-                  <CardDescription>Estimation basée sur le régime micro-entrepreneur</CardDescription>
+                  <CardDescription>Régime micro-entrepreneur — Taux 2024/2025</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* URSSAF */}
@@ -225,9 +261,9 @@ export default function FinancePage() {
                     <div className="flex items-start gap-3">
                       <Landmark size={18} className="text-primary mt-0.5" />
                       <div>
-                        <p className="font-medium text-foreground text-sm">Cotisations URSSAF</p>
+                        <p className="font-medium text-foreground text-sm">Cotisations sociales URSSAF</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Taux : {config.urssaf}% du CA — Couvre maladie, retraite, allocations familiales
+                          Taux : {config.urssaf}% du CA — Maladie, retraite, invalidité-décès, allocations familiales, CSG/CRDS
                         </p>
                       </div>
                     </div>
@@ -294,21 +330,12 @@ export default function FinancePage() {
                     text={`Mettez de côté environ ${formatEuro(totalRevenue * 0.25)} (25% du CA) chaque mois pour couvrir vos charges sociales et fiscales.`}
                   />
 
-                  {totalRevenue > 72600 && activityType === "services" && (
+                  {totalRevenue > config.seuil && (
                     <RecoItem
                       icon={<AlertTriangle size={16} />}
                       type="warning"
                       title="Seuil micro-entrepreneur dépassé"
-                      text="Votre CA dépasse le seuil de 77 700 € pour les services. Envisagez un changement de statut."
-                    />
-                  )}
-
-                  {totalRevenue > 188700 && activityType === "commerce" && (
-                    <RecoItem
-                      icon={<AlertTriangle size={16} />}
-                      type="warning"
-                      title="Seuil micro-entrepreneur dépassé"
-                      text="Votre CA dépasse le seuil de 188 700 € pour la vente. Envisagez un changement de statut."
+                      text={`Votre CA dépasse le seuil de ${new Intl.NumberFormat("fr-FR").format(config.seuil)} € pour votre activité. Envisagez un changement de statut (EURL, SASU...).`}
                     />
                   )}
 
@@ -316,7 +343,21 @@ export default function FinancePage() {
                     icon={<Info size={16} />}
                     type="info"
                     title="Versement libératoire de l'IR"
-                    text={`Si votre revenu fiscal de référence le permet, vous pouvez opter pour le versement libératoire (${activityType === "commerce" ? "1%" : activityType === "services" ? "1,7%" : "2,2%"} du CA) pour simplifier votre fiscalité.`}
+                    text={`Si votre revenu fiscal de référence le permet, vous pouvez opter pour le versement libératoire (${config.vlIR}% du CA = ${formatEuro(totalRevenue * config.vlIR / 100)}) pour simplifier votre fiscalité.`}
+                  />
+
+                  <RecoItem
+                    icon={<Info size={16} />}
+                    type="info"
+                    title="ACRE (1ère année)"
+                    text={`Si vous êtes éligible à l'ACRE, vos cotisations URSSAF seraient réduites à ${config.urssafAcre}% soit ${formatEuro(totalRevenue * config.urssafAcre / 100)} au lieu de ${formatEuro(urssafAmount)}.`}
+                  />
+
+                  <RecoItem
+                    icon={<Info size={16} />}
+                    type="info"
+                    title="Contribution formation (CFP)"
+                    text={`Vous cotisez ${config.formation}% du CA soit ${formatEuro(totalRevenue * config.formation / 100)} pour la formation professionnelle (inclus dans les cotisations URSSAF).`}
                   />
 
                   <RecoItem
