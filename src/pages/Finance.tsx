@@ -101,7 +101,7 @@ export default function FinancePage() {
   // Frais fixes mensuels
   const FIXED_MONTHLY_EXPENSES = [
     { label: "Carte bancaire professionnelle", amount: 10 },
-    { label: "Domiciliation", amount: 25 },
+    { label: "Domiciliation", amount: 24 },
   ];
   const totalFixedMonthly = FIXED_MONTHLY_EXPENSES.reduce((s, e) => s + e.amount, 0);
 
