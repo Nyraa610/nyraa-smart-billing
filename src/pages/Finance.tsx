@@ -93,10 +93,14 @@ function formatEuro(amount: number): string {
 export default function FinancePage() {
   const { transactions, loading } = useSupabaseTransactions();
   const { companyInfo } = useSupabaseCompanyInfo();
-  const [activityType, setActivityType] = useState<ActivityType>("services_bic");
+  const [activityType, setActivityType] = useState<ActivityType>("liberal");
   const [period, setPeriod] = useState<string>("year");
 
   const config = ACTIVITY_CONFIG[activityType];
+
+  // Taux total déclaration URSSAF = cotisations + VL IR + CFP
+  const totalRate = config.urssaf + config.vlIR + config.formation;
+  const totalRateClassique = config.urssaf + config.formation; // sans VL
 
   const filteredTransactions = useMemo(() => {
     const now = new Date();
@@ -117,14 +121,44 @@ export default function FinancePage() {
     [filteredTransactions]
   );
 
-  // Calculs fiscaux
+  // Répartition trimestrielle du CA (année en cours)
+  const quarterlyData = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const quarters = [
+      { label: "T1 (Jan-Mar)", months: [0, 1, 2] },
+      { label: "T2 (Avr-Jun)", months: [3, 4, 5] },
+      { label: "T3 (Jul-Sep)", months: [6, 7, 8] },
+      { label: "T4 (Oct-Déc)", months: [9, 10, 11] },
+    ];
+    return quarters.map((q) => {
+      const ca = transactions
+        .filter((t) => {
+          const d = new Date(t.date);
+          return d.getFullYear() === year && q.months.includes(d.getMonth());
+        })
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      return { ...q, ca, charges: Math.round(ca * totalRate) / 100 };
+    });
+  }, [transactions, totalRate]);
+
+  // Calculs avec versement libératoire (VL)
   const urssafAmount = totalRevenue * (config.urssaf / 100);
-  const taxableIncome = totalRevenue * ((100 - config.abattement) / 100);
-  const irAmount = calculateIR(taxableIncome);
-  const cfeEstimate = totalRevenue > 0 ? Math.max(200, Math.min(totalRevenue * 0.005, 700)) : 0;
-  const totalCharges = urssafAmount + irAmount + cfeEstimate;
-  const netIncome = totalRevenue - totalCharges;
-  const chargesPercent = totalRevenue > 0 ? (totalCharges / totalRevenue) * 100 : 0;
+  const vlIRAmount = totalRevenue * (config.vlIR / 100);
+  const cfpAmount = totalRevenue * (config.formation / 100);
+  const totalChargesVL = urssafAmount + vlIRAmount + cfpAmount;
+
+  // Calcul IR classique (sans VL) pour comparaison
+  const taxableIncomeClassique = totalRevenue * ((100 - config.abattement) / 100);
+  const irClassique = calculateIR(taxableIncomeClassique);
+  const totalChargesClassique = urssafAmount + cfpAmount + irClassique;
+
+  // Quel régime est le plus avantageux ?
+  const vlIsBetter = totalChargesVL <= totalChargesClassique;
+  const savings = Math.abs(totalChargesVL - totalChargesClassique);
+
+  const netIncome = totalRevenue - totalChargesVL;
+  const chargesPercent = totalRevenue > 0 ? (totalChargesVL / totalRevenue) * 100 : 0;
 
   const periodLabel = period === "month" ? "ce mois" : period === "quarter" ? "ce trimestre" : period === "year" ? "cette année" : "au total";
 
@@ -139,7 +173,7 @@ export default function FinancePage() {
           </div>
           <div className="flex items-center gap-3">
             <Select value={activityType} onValueChange={(v) => setActivityType(v as ActivityType)}>
-              <SelectTrigger className="w-[260px]">
+              <SelectTrigger className="w-[280px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -189,9 +223,8 @@ export default function FinancePage() {
                       <ArrowDownRight size={20} className="text-destructive" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Total charges estimées</p>
-                      <p className="text-xl font-bold text-foreground">{formatEuro(totalCharges)}</p>
-                      <p className="text-xs text-muted-foreground">{chargesPercent.toFixed(1)}% du CA</p>
+                      <p className="text-xs text-muted-foreground">Charges à payer ({totalRate}% du CA)</p>
+                      <p className="text-xl font-bold text-foreground">{formatEuro(totalChargesVL)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -233,6 +266,9 @@ export default function FinancePage() {
                   <TrendingUp size={18} className="text-primary" />
                   Répartition de votre chiffre d'affaires
                 </CardTitle>
+                <CardDescription>
+                  {totalRate}% de charges (URSSAF {config.urssaf}% + IR libératoire {config.vlIR}% + CFP {config.formation}%) → {(100 - chargesPercent).toFixed(1)}% pour vous
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -245,15 +281,44 @@ export default function FinancePage() {
               </CardContent>
             </Card>
 
-            {/* Detail des charges */}
+            {/* Déclaration trimestrielle URSSAF */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Landmark size={18} className="text-primary" />
+                  Déclaration trimestrielle URSSAF
+                </CardTitle>
+                <CardDescription>
+                  Montant à payer chaque trimestre = CA du trimestre × {totalRate}%
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {quarterlyData.map((q) => (
+                    <div key={q.label} className="p-4 rounded-xl bg-muted/50 space-y-2">
+                      <p className="text-sm font-medium text-foreground">{q.label}</p>
+                      <p className="text-xs text-muted-foreground">CA : {formatEuro(q.ca)}</p>
+                      <p className={`text-lg font-bold ${q.charges > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {formatEuro(q.charges)}
+                      </p>
+                      {q.ca === 0 && (
+                        <p className="text-xs text-muted-foreground italic">Pas de CA → 0 € à payer</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Detail des charges + Comparaison */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <ReceiptText size={18} className="text-primary" />
-                    Détail des charges
+                    Détail des charges (VL)
                   </CardTitle>
-                  <CardDescription>Régime micro-entrepreneur — Taux 2024/2025</CardDescription>
+                  <CardDescription>Avec versement libératoire de l'IR — Taux 2024/2025</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* URSSAF */}
@@ -261,9 +326,9 @@ export default function FinancePage() {
                     <div className="flex items-start gap-3">
                       <Landmark size={18} className="text-primary mt-0.5" />
                       <div>
-                        <p className="font-medium text-foreground text-sm">Cotisations sociales URSSAF</p>
+                        <p className="font-medium text-foreground text-sm">Cotisations sociales</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Taux : {config.urssaf}% du CA — Maladie, retraite, invalidité-décès, allocations familiales, CSG/CRDS
+                          {config.urssaf}% du CA — Maladie, retraite, CSG/CRDS
                         </p>
                       </div>
                     </div>
@@ -272,119 +337,172 @@ export default function FinancePage() {
                     </Badge>
                   </div>
 
-                  {/* IR */}
+                  {/* VL IR */}
                   <div className="flex items-start justify-between p-3 rounded-xl bg-muted/50">
                     <div className="flex items-start gap-3">
                       <ReceiptText size={18} className="text-primary mt-0.5" />
                       <div>
-                        <p className="font-medium text-foreground text-sm">Impôt sur le revenu</p>
+                        <p className="font-medium text-foreground text-sm">Impôt libératoire (VL)</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Abattement {config.abattement}% → Revenu imposable : {formatEuro(taxableIncome)}
+                          {config.vlIR}% du CA — Règle l'IR directement
                         </p>
                       </div>
                     </div>
                     <Badge variant="destructive" className="text-sm font-semibold shrink-0">
-                      {formatEuro(irAmount)}
+                      {formatEuro(vlIRAmount)}
                     </Badge>
                   </div>
 
-                  {/* CFE */}
+                  {/* CFP */}
                   <div className="flex items-start justify-between p-3 rounded-xl bg-muted/50">
                     <div className="flex items-start gap-3">
                       <Landmark size={18} className="text-primary mt-0.5" />
                       <div>
-                        <p className="font-medium text-foreground text-sm">CFE (estimée)</p>
+                        <p className="font-medium text-foreground text-sm">Formation professionnelle (CFP)</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Cotisation foncière des entreprises — Variable selon la commune
+                          {config.formation}% du CA — Droit à la formation
                         </p>
                       </div>
                     </div>
                     <Badge variant="outline" className="text-sm font-semibold shrink-0">
-                      ~{formatEuro(cfeEstimate)}
+                      {formatEuro(cfpAmount)}
                     </Badge>
                   </div>
 
                   <Separator />
 
                   <div className="flex items-center justify-between font-semibold">
-                    <span className="text-foreground">Total des charges</span>
-                    <span className="text-destructive text-lg">{formatEuro(totalCharges)}</span>
+                    <span className="text-foreground">Total avec VL ({totalRate}%)</span>
+                    <span className="text-destructive text-lg">{formatEuro(totalChargesVL)}</span>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Recommandations */}
+              {/* Comparaison VL vs Classique */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Lightbulb size={18} className="text-warning" />
-                    Recommandations
+                    <TrendingUp size={18} className="text-primary" />
+                    VL vs Régime classique
                   </CardTitle>
-                  <CardDescription>Conseils personnalisés selon votre situation</CardDescription>
+                  <CardDescription>Quel régime est le plus avantageux pour vous ?</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <RecoItem
-                    icon={<PiggyBank size={16} />}
-                    type="success"
-                    title="Épargne de précaution"
-                    text={`Mettez de côté environ ${formatEuro(totalRevenue * 0.25)} (25% du CA) chaque mois pour couvrir vos charges sociales et fiscales.`}
-                  />
+                <CardContent className="space-y-4">
+                  {/* VL */}
+                  <div className={`p-3 rounded-xl border ${vlIsBetter ? 'border-success/30 bg-success/5' : 'border-muted bg-muted/30'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-foreground text-sm flex items-center gap-2">
+                        Versement libératoire
+                        {vlIsBetter && <Badge variant="outline" className="text-success border-success/30 text-xs">Plus avantageux</Badge>}
+                      </span>
+                      <span className="font-bold text-foreground">{formatEuro(totalChargesVL)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {config.urssaf}% + {config.vlIR}% + {config.formation}% = {totalRate}% du CA
+                    </p>
+                  </div>
 
-                  {totalRevenue > config.seuil && (
-                    <RecoItem
-                      icon={<AlertTriangle size={16} />}
-                      type="warning"
-                      title="Seuil micro-entrepreneur dépassé"
-                      text={`Votre CA dépasse le seuil de ${new Intl.NumberFormat("fr-FR").format(config.seuil)} € pour votre activité. Envisagez un changement de statut (EURL, SASU...).`}
-                    />
-                  )}
+                  {/* Classique */}
+                  <div className={`p-3 rounded-xl border ${!vlIsBetter ? 'border-success/30 bg-success/5' : 'border-muted bg-muted/30'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-foreground text-sm flex items-center gap-2">
+                        Régime classique (barème IR)
+                        {!vlIsBetter && <Badge variant="outline" className="text-success border-success/30 text-xs">Plus avantageux</Badge>}
+                      </span>
+                      <span className="font-bold text-foreground">{formatEuro(totalChargesClassique)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Cotisations {totalRateClassique}% ({formatEuro(urssafAmount + cfpAmount)}) + IR barème sur {formatEuro(taxableIncomeClassique)} (après abattement {config.abattement}%) = {formatEuro(irClassique)}
+                    </p>
+                    {taxableIncomeClassique < IR_BRACKETS[0].max && (
+                      <p className="text-xs text-success mt-1 font-medium">
+                        ✓ Revenu imposable sous le seuil de {new Intl.NumberFormat("fr-FR").format(IR_BRACKETS[0].max)} € → IR = 0 €
+                      </p>
+                    )}
+                  </div>
 
-                  <RecoItem
-                    icon={<Info size={16} />}
-                    type="info"
-                    title="Versement libératoire de l'IR"
-                    text={`Si votre revenu fiscal de référence le permet, vous pouvez opter pour le versement libératoire (${config.vlIR}% du CA = ${formatEuro(totalRevenue * config.vlIR / 100)}) pour simplifier votre fiscalité.`}
-                  />
+                  <Separator />
 
-                  <RecoItem
-                    icon={<Info size={16} />}
-                    type="info"
-                    title="ACRE (1ère année)"
-                    text={`Si vous êtes éligible à l'ACRE, vos cotisations URSSAF seraient réduites à ${config.urssafAcre}% soit ${formatEuro(totalRevenue * config.urssafAcre / 100)} au lieu de ${formatEuro(urssafAmount)}.`}
-                  />
-
-                  <RecoItem
-                    icon={<Info size={16} />}
-                    type="info"
-                    title="Contribution formation (CFP)"
-                    text={`Vous cotisez ${config.formation}% du CA soit ${formatEuro(totalRevenue * config.formation / 100)} pour la formation professionnelle (inclus dans les cotisations URSSAF).`}
-                  />
-
-                  <RecoItem
-                    icon={<CheckCircle size={16} />}
-                    type="success"
-                    title="Rémunération possible"
-                    text={`Après déduction de toutes les charges estimées, vous pouvez vous verser ${formatEuro(Math.max(0, netIncome))} ${periodLabel}.`}
-                  />
-
-                  {netIncome > 0 && (
-                    <RecoItem
-                      icon={<PiggyBank size={16} />}
-                      type="info"
-                      title="Conseil investissement"
-                      text={`Pensez à investir une partie de votre bénéfice net (ex: ${formatEuro(netIncome * 0.1)}) dans du matériel professionnel ou de la formation pour développer votre activité.`}
-                    />
-                  )}
+                  <div className={`p-3 rounded-xl ${vlIsBetter ? 'bg-success/10 border border-success/20' : 'bg-warning/10 border border-warning/20'}`}>
+                    <p className="text-sm font-medium text-foreground">
+                      {vlIsBetter
+                        ? `✅ Le versement libératoire vous fait économiser ${formatEuro(savings)}`
+                        : `⚠️ Le régime classique vous ferait économiser ${formatEuro(savings)}`
+                      }
+                    </p>
+                    {!vlIsBetter && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Avec un CA de {formatEuro(totalRevenue)}, votre revenu imposable ({formatEuro(taxableIncomeClassique)}) est en dessous du seuil d'imposition. Vous payez {formatEuro(vlIRAmount)} d'impôt libératoire inutilement.
+                      </p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Recommandations */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Lightbulb size={18} className="text-warning" />
+                  Recommandations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <RecoItem
+                  icon={<PiggyBank size={16} />}
+                  type="success"
+                  title="Anticipation des charges"
+                  text={`Mettez de côté 25% de chaque entrée d'argent soit ${formatEuro(totalRevenue * 0.25)} pour couvrir vos charges trimestrielles.`}
+                />
+
+                <RecoItem
+                  icon={<CheckCircle size={16} />}
+                  type="success"
+                  title="Rémunération possible"
+                  text={`Après déduction des charges ({totalRate}%), vous pouvez vous verser ${formatEuro(Math.max(0, netIncome))} ${periodLabel}.`}
+                />
+
+                {totalRevenue > config.seuil && (
+                  <RecoItem
+                    icon={<AlertTriangle size={16} />}
+                    type="warning"
+                    title="Seuil micro-entrepreneur"
+                    text={`Votre CA dépasse le seuil de ${new Intl.NumberFormat("fr-FR").format(config.seuil)} €. Envisagez un changement de statut (EURL, SASU...).`}
+                  />
+                )}
+
+                {!vlIsBetter && (
+                  <RecoItem
+                    icon={<AlertTriangle size={16} />}
+                    type="warning"
+                    title="Régime classique plus avantageux"
+                    text={`Avec votre CA actuel, le régime classique (sans VL) serait plus avantageux. Vous économiseriez ${formatEuro(savings)} car votre revenu imposable est sous le seuil d'imposition.`}
+                  />
+                )}
+
+                <RecoItem
+                  icon={<Info size={16} />}
+                  type="info"
+                  title="ACRE (1ère année)"
+                  text={`Si éligible, vos cotisations URSSAF passent de ${config.urssaf}% à ${config.urssafAcre}% la 1ère année, soit ${formatEuro(totalRevenue * config.urssafAcre / 100)} au lieu de ${formatEuro(urssafAmount)}.`}
+                />
+
+                <RecoItem
+                  icon={<Info size={16} />}
+                  type="info"
+                  title="CFE"
+                  text="La cotisation foncière des entreprises (CFE) est exonérée la 1ère année. Ensuite, elle est payée en décembre et varie selon votre commune (200 à 700 € en moyenne)."
+                />
+              </CardContent>
+            </Card>
 
             {/* Note légale */}
             <Card className="border-warning/30 bg-warning/5">
               <CardContent className="p-4 flex items-start gap-3">
                 <AlertTriangle size={18} className="text-warning mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  <strong className="text-foreground">Avertissement :</strong> Ces estimations sont données à titre indicatif et ne constituent pas un conseil fiscal. Elles sont basées sur le régime micro-entrepreneur et les barèmes en vigueur. Consultez un expert-comptable pour une analyse personnalisée de votre situation.
+                  <strong className="text-foreground">Avertissement :</strong> Ces estimations sont données à titre indicatif pour le régime micro-entrepreneur avec versement libératoire. Les montants réels peuvent varier. La CFE (payée en décembre) n'est pas incluse dans le calcul trimestriel URSSAF. Consultez un expert-comptable pour une analyse personnalisée.
                 </p>
               </CardContent>
             </Card>
