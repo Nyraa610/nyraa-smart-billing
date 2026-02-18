@@ -1,11 +1,19 @@
 import { Layout } from "@/components/layout/Layout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useSupabaseTransactions } from "@/hooks/useSupabaseTransactions";
-import { TrendingUp, Wallet, BookOpen, Loader2, Receipt, Trash2, Download } from "lucide-react";
+import { useSupabaseCompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
+import { TrendingUp, Wallet, BookOpen, Loader2, Receipt, Trash2, Download, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState } from "react";
-import { exportTransactionsToCSV } from "@/utils/csvExport";
+import { exportTransactionsToCSV, filterTransactionsByPeriod, ExportPeriod } from "@/utils/csvExport";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +27,9 @@ import {
 
 export default function AccountingPage() {
   const { transactions, loading, deleteTransaction } = useSupabaseTransactions();
+  const { companyInfo } = useSupabaseCompanyInfo();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [exportPeriod, setExportPeriod] = useState<ExportPeriod>('all');
 
   const totalIncome = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -31,6 +41,26 @@ export default function AccountingPage() {
       }
       setDeleteId(null);
     }
+  };
+
+  const handleExport = () => {
+    const filtered = filterTransactionsByPeriod(transactions, exportPeriod);
+    if (filtered.length === 0) {
+      toast.error('Aucune recette à exporter pour cette période');
+      return;
+    }
+    exportTransactionsToCSV(
+      transactions,
+      companyInfo ? {
+        name: companyInfo.name,
+        siret: companyInfo.siret,
+        address: companyInfo.address,
+        postal_code: companyInfo.postal_code,
+        city: companyInfo.city,
+      } : undefined,
+      exportPeriod
+    );
+    toast.success('Export CSV téléchargé');
   };
 
   if (loading) {
@@ -50,23 +80,30 @@ export default function AccountingPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Comptabilité</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">Livre de recettes - Micro-entreprise</p>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base">Livre de recettes - Entreprise individuelle</p>
           </div>
-          <Button 
-            onClick={() => {
-              if (transactions.length === 0) {
-                toast.error('Aucune recette à exporter');
-                return;
-              }
-              exportTransactionsToCSV(transactions);
-              toast.success('Export CSV téléchargé');
-            }}
-            variant="outline"
-            className="gap-2"
-          >
-            <Download size={18} />
-            Exporter CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={exportPeriod} onValueChange={(v) => setExportPeriod(v as ExportPeriod)}>
+              <SelectTrigger className="w-[160px] gap-2">
+                <Calendar size={16} />
+                <SelectValue placeholder="Période" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tout</SelectItem>
+                <SelectItem value="month">Ce mois</SelectItem>
+                <SelectItem value="quarter">Ce trimestre</SelectItem>
+                <SelectItem value="year">Cette année</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button 
+              onClick={handleExport}
+              variant="outline"
+              className="gap-2"
+            >
+              <Download size={18} />
+              Exporter CSV
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
