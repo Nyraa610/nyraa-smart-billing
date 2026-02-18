@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Calculator, Settings, LogOut, Menu, X, Receipt } from "lucide-react";
+import { Home, Users, FileText, Calculator, Settings, LogOut, Menu, X, Receipt, TrendingUp } from "lucide-react";
 import logoNyraa from "@/assets/logo-nyraa.png";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ const navigation = [
   { name: "Factures", href: "/invoices", icon: FileText },
   { name: "Devis", href: "/quotes", icon: Receipt },
   { name: "Comptabilité", href: "/accounting", icon: Calculator },
+  { name: "Finances", href: "/finance", icon: TrendingUp },
   { name: "Paramètres", href: "/settings", icon: Settings },
 ];
 
