@@ -194,7 +194,10 @@ export default function InvoicesPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <p className="text-lg font-bold">{Number(invoice.total).toLocaleString('fr-FR')} €</p>
-                  <p className="text-xs text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString('fr-FR')}</p>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-xs text-muted-foreground">{new Date(invoice.due_date).toLocaleDateString('fr-FR')}</p>
+                    <Button variant="ghost" size="icon" onClick={() => handleEditInvoice(invoice)}><Pencil size={16} /></Button>
+                  </div>
                 </div>
               </div>
             ))
