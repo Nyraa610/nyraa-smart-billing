@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, MoreHorizontal, Search, Loader2, Check, X, Clock } from "lucide-react";
+import { Plus, Eye, MoreHorizontal, Search, Loader2, Check, X, Clock, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import {
@@ -38,6 +38,7 @@ const statusConfig: Record<QuoteStatus, { label: string; variant: "default" | "s
 export default function QuotesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editQuote, setEditQuote] = useState<Quote | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -54,6 +55,16 @@ export default function QuotesPage() {
   const handleSaveQuote = async (quoteData: Parameters<typeof addQuote>[0]) => {
     const result = await addQuote(quoteData);
     if (result) toast.success('Devis créé');
+  };
+
+  const handleEditQuote = (quote: Quote) => {
+    setEditQuote(quote);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditQuote(null);
   };
 
   const handleViewQuote = (quote: Quote) => {
@@ -86,7 +97,7 @@ export default function QuotesPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Devis</h1>
             <p className="text-muted-foreground mt-1 text-sm md:text-base">Créez et gérez vos propositions</p>
           </div>
-          <Button className="gradient-primary" size="lg" onClick={() => setIsFormOpen(true)}>
+          <Button className="gradient-primary" size="lg" onClick={() => { setEditQuote(null); setIsFormOpen(true); }}>
             <Plus size={20} className="mr-2" />Nouveau devis
           </Button>
         </div>
@@ -109,7 +120,10 @@ export default function QuotesPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <p className="text-lg font-bold">{Number(quote.total).toLocaleString('fr-FR')} €</p>
-                  <p className="text-xs text-muted-foreground">{new Date(quote.valid_until).toLocaleDateString('fr-FR')}</p>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-xs text-muted-foreground">{new Date(quote.valid_until).toLocaleDateString('fr-FR')}</p>
+                    <Button variant="ghost" size="icon" onClick={() => handleEditQuote(quote)}><Pencil size={16} /></Button>
+                  </div>
                 </div>
               </div>
             ))
@@ -143,6 +157,7 @@ export default function QuotesPage() {
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" onClick={() => handleViewQuote(quote)}><Eye size={18} /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEditQuote(quote)}><Pencil size={18} /></Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal size={18} /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -163,7 +178,7 @@ export default function QuotesPage() {
         </div>
       </div>
 
-      <QuoteForm open={isFormOpen} onClose={() => setIsFormOpen(false)} onSave={handleSaveQuote} clients={clients} companyInfo={companyInfo} />
+      <QuoteForm open={isFormOpen} onClose={handleCloseForm} onSave={handleSaveQuote} onUpdate={updateQuote} clients={clients} companyInfo={companyInfo} editQuote={editQuote} />
       <QuoteDetailDialog quote={selectedQuote} open={isDetailOpen} onClose={() => setIsDetailOpen(false)} onStatusChange={handleStatusChange} companyInfo={companyInfo} />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
