@@ -110,7 +110,7 @@ export function useSupabaseInvoices() {
 
     const { error } = await supabase
       .from('invoices')
-      .update(updateData)
+      .update(updateData as never)
       .eq('id', id);
 
     if (error) {

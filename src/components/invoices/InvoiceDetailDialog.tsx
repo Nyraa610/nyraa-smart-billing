@@ -1,7 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Download, CheckCircle, Clock, AlertCircle, Languages, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { getDailyRate } from "@/utils/exchangeRate";
 import { Invoice, InvoiceStatus } from "@/hooks/useSupabaseInvoices";
 import { CompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
 import { generateInvoicePDF } from "@/utils/pdfGenerator";
@@ -21,11 +24,27 @@ const statusConfig: Record<InvoiceStatus, { label: string; variant: "default" | 
 };
 
 export function InvoiceDetailDialog({ invoice, open, onClose, onStatusChange, companyInfo }: InvoiceDetailDialogProps) {
+  const [converting, setConverting] = useState(false);
+
   if (!invoice) return null;
 
   const handleDownloadPDF = async () => {
     if (companyInfo) {
       await generateInvoicePDF(invoice, companyInfo);
+    }
+  };
+
+  const handleDownloadUsdPDF = async () => {
+    if (!companyInfo) return;
+    setConverting(true);
+    try {
+      const { rate, date } = await getDailyRate('USD');
+      await generateInvoicePDF(invoice, companyInfo, { lang: 'en', currency: 'USD', rate, rateDate: date });
+      toast.success(`Facture convertie en anglais (1 EUR = ${rate.toFixed(4)} USD)`);
+    } catch (e) {
+      toast.error("Taux de change indisponible, réessayez plus tard");
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -136,11 +155,17 @@ export function InvoiceDetailDialog({ invoice, open, onClose, onStatusChange, co
             </div>
           )}
 
-          <div className="flex justify-between pt-2">
-            <Button variant="outline" onClick={handleDownloadPDF}>
-              <Download className="mr-2 h-4 w-4" />
-              Télécharger PDF
-            </Button>
+          <div className="flex flex-wrap justify-between gap-2 pt-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={handleDownloadPDF}>
+                <Download className="mr-2 h-4 w-4" />
+                Télécharger PDF
+              </Button>
+              <Button variant="outline" onClick={handleDownloadUsdPDF} disabled={converting}>
+                {converting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Languages className="mr-2 h-4 w-4" />}
+                PDF en anglais ($)
+              </Button>
+            </div>
             <Button variant="outline" onClick={onClose}>Fermer</Button>
           </div>
         </div>

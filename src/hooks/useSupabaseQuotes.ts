@@ -109,7 +109,7 @@ export function useSupabaseQuotes() {
 
     const { error } = await supabase
       .from('quotes')
-      .update(updateData)
+      .update(updateData as never)
       .eq('id', id);
 
     if (error) {
