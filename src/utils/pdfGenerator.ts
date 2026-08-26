@@ -12,13 +12,35 @@ const COLORS = {
   muted: { r: 100, g: 100, b: 100 },        // Texte gris
 };
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+export interface PdfOptions {
+  lang?: 'fr' | 'en';
+  /** Taux de conversion EUR -> devise cible (1 si EUR) */
+  rate?: number;
+  currency?: 'EUR' | 'USD';
+  rateDate?: string;
 }
 
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u202F/g, ' ') + ' €';
+function isEn(o?: PdfOptions) {
+  return o?.lang === 'en';
+}
+
+function formatDate(dateStr: string, o?: PdfOptions): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(isEn(o) ? 'en-US' : 'fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatCurrency(amount: number, o?: PdfOptions): string {
+  const rate = o?.rate ?? 1;
+  const currency = o?.currency ?? 'EUR';
+  const value = amount * rate;
+  if (currency === 'USD') {
+    return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u202F/g, ' ') + ' €';
+}
+
+function T(o: PdfOptions | undefined, fr: string, en: string): string {
+  return isEn(o) ? en : fr;
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -31,7 +53,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo): Promise<void> {
+export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo, options: PdfOptions = {}): Promise<void> {
   const doc = new jsPDF();
   const pageWidth = 210;
   const margin = 15;
@@ -84,7 +106,7 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   }
   
   if (company.siret) {
-    doc.text(`SIRET : ${company.siret}`, margin, yPos);
+    doc.text(`${T(options, 'SIRET', 'Company ID (SIRET)')} : ${company.siret}`, margin, yPos);
     yPos += 5;
   }
   
@@ -92,22 +114,22 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
-  doc.text('FACTURE', pageWidth - margin, 20, { align: 'right' });
+  doc.text(T(options, 'FACTURE', 'INVOICE'), pageWidth - margin, 20, { align: 'right' });
   
   // Infos facture à droite
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text(`N° : ${invoice.invoice_number}`, pageWidth - margin, 30, { align: 'right' });
-  doc.text(`Date : ${formatDate(invoice.issue_date)}`, pageWidth - margin, 36, { align: 'right' });
-  doc.text(`Échéance : ${formatDate(invoice.due_date)}`, pageWidth - margin, 42, { align: 'right' });
+  doc.text(`${T(options, 'N°', 'No.')} : ${invoice.invoice_number}`, pageWidth - margin, 30, { align: 'right' });
+  doc.text(`${T(options, 'Date', 'Date')} : ${formatDate(invoice.issue_date, options)}`, pageWidth - margin, 36, { align: 'right' });
+  doc.text(`${T(options, 'Échéance', 'Due date')} : ${formatDate(invoice.due_date, options)}`, pageWidth - margin, 42, { align: 'right' });
   
   // Titre/Objet de la facture
   if (invoice.title) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-    doc.text(`Objet : ${invoice.title}`, pageWidth - margin, 48, { align: 'right' });
+    doc.text(`${T(options, 'Objet', 'Subject')} : ${invoice.title}`, pageWidth - margin, 48, { align: 'right' });
   }
   
   // === ENCADRÉ CLIENT ===
@@ -132,7 +154,7 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('Facturer à :', margin + 5, clientY);
+  doc.text(T(options, 'Facturer à :', 'Bill to:'), margin + 5, clientY);
   clientY += 7;
   
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
@@ -157,13 +179,13 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   const tableData = invoice.items.map(item => [
     item.description,
     item.quantity.toString(),
-    formatCurrency(item.unitPrice),
-    formatCurrency(item.total)
+    formatCurrency(item.unitPrice, options),
+    formatCurrency(item.total, options)
   ]);
   
   autoTable(doc, {
     startY: tableStartY,
-    head: [['Désignation', 'Quantité', 'Prix unitaire HT', 'Total HT']],
+    head: [isEn(options) ? ['Description', 'Qty', 'Unit price', 'Amount'] : ['Désignation', 'Quantité', 'Prix unitaire HT', 'Total HT']],
     body: tableData,
     theme: 'plain',
     styles: {
@@ -199,22 +221,22 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('Total HT :', totalsX, finalY);
-  doc.text(formatCurrency(Number(invoice.subtotal)), pageWidth - margin, finalY, { align: 'right' });
+  doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
+  doc.text(formatCurrency(Number(invoice.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
   finalY += 8;
   
   // Mention TVA
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text('TVA non applicable, art. 293 B du CGI', totalsX, finalY);
+  doc.text(T(options, 'TVA non applicable, art. 293 B du CGI', 'VAT not applicable, art. 293 B of the French tax code'), totalsX, finalY);
   finalY += 10;
   
   // Total TTC
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Total TTC :', totalsX, finalY);
-  doc.text(formatCurrency(Number(invoice.total)), pageWidth - margin, finalY, { align: 'right' });
+  doc.text(T(options, 'Total TTC :', 'Total due:'), totalsX, finalY);
+  doc.text(formatCurrency(Number(invoice.total), options), pageWidth - margin, finalY, { align: 'right' });
   finalY += 20;
   
   // === ENCADRÉ INFORMATIONS DE PAIEMENT ===
@@ -235,7 +257,7 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Informations de paiement', margin + 5, paymentY);
+  doc.text(T(options, 'Informations de paiement', 'Payment information'), margin + 5, paymentY);
   paymentY += 8;
   
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
@@ -243,19 +265,19 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setFont('helvetica', 'normal');
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Conditions de paiement : ', margin + 5, paymentY);
+  doc.text(T(options, 'Conditions de paiement : ', 'Payment terms: '), margin + 5, paymentY);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${company.payment_delay || 30} jours à réception`, margin + 55, paymentY);
+  doc.text(isEn(options) ? `${company.payment_delay || 30} days from receipt` : `${company.payment_delay || 30} jours à réception`, margin + 55, paymentY);
   paymentY += 5;
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Mode de paiement : ', margin + 5, paymentY);
+  doc.text(T(options, 'Mode de paiement : ', 'Payment method: '), margin + 5, paymentY);
   doc.setFont('helvetica', 'normal');
-  doc.text('Virement bancaire', margin + 45, paymentY);
+  doc.text(T(options, 'Virement bancaire', 'Bank transfer'), margin + 45, paymentY);
   paymentY += 8;
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Coordonnées bancaires :', margin + 5, paymentY);
+  doc.text(T(options, 'Coordonnées bancaires :', 'Bank details:'), margin + 5, paymentY);
   paymentY += 5;
   
   doc.setFont('helvetica', 'normal');
@@ -268,7 +290,7 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
     paymentY += 4;
   }
   if (company.bank_name) {
-    doc.text(`Banque : ${company.bank_name}`, margin + 5, paymentY);
+    doc.text(`${T(options, 'Banque', 'Bank')} : ${company.bank_name}`, margin + 5, paymentY);
   }
   
   // === MENTIONS LÉGALES ===
@@ -287,7 +309,7 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('Mentions légales', margin, finalY);
+  doc.text(T(options, 'Mentions légales', 'Legal notices'), margin, finalY);
   finalY += 5;
   
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
@@ -295,6 +317,17 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   doc.setFont('helvetica', 'normal');
   
   // Pénalités de retard
+  if (isEn(options)) {
+    doc.text("• Late payment: late payment penalties apply at three times the legal interest rate, plus a fixed recovery", margin, finalY);
+    finalY += 3;
+    doc.text("  indemnity of EUR 40 (art. L441-6 and D441-5 of the French Commercial Code).", margin, finalY);
+    finalY += 4;
+    doc.text("• Early payment discount: no discount is granted for early payment.", margin, finalY);
+    finalY += 4;
+    doc.text("• Retention of title: goods remain the property of the seller until full payment of the price.", margin, finalY);
+    finalY += 4;
+    doc.text("• Sole proprietorship: exempt from registration with the trade and companies register.", margin, finalY);
+  } else {
   doc.text("• Pénalités de retard : En cas de retard de paiement, des pénalités seront appliquées au taux de trois fois le taux d'intérêt légal, ainsi qu'une", margin, finalY);
   finalY += 3;
   doc.text("  indemnité forfaitaire de recouvrement de 40€ (art. L441-6 et D441-5 du Code de commerce).", margin, finalY);
@@ -310,17 +343,29 @@ export async function generateInvoicePDF(invoice: Invoice, company: CompanyInfo)
   
   // Entreprise individuelle
   doc.text("• Entreprise individuelle : Dispensée d'immatriculation au RCS et au répertoire des métiers.", margin, finalY);
+  }
   
   // === MESSAGE NYRAA BILLING (en bas de page fixe) ===
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
-  doc.text("Facture générée par l'application Nyraa Billing", pageWidth / 2, pageHeight - 8, { align: 'center' });
+  doc.text(T(options, "Facture générée par l'application Nyraa Billing", "Invoice generated by the Nyraa Billing app"), pageWidth / 2, pageHeight - 8, { align: 'center' });
   
-  doc.save(`${invoice.invoice_number}.pdf`);
+  if (options.currency === 'USD' && options.rate) {
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'italic');
+    doc.text(
+      `Amounts converted from EUR at the daily rate of ${options.rate.toFixed(4)} USD/EUR${options.rateDate ? ` (${options.rateDate})` : ''}.`,
+      pageWidth / 2,
+      pageHeight - 13,
+      { align: 'center' }
+    );
+  }
+
+  doc.save(`${invoice.invoice_number}${isEn(options) ? '-EN' : ''}.pdf`);
 }
 
-export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
+export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: PdfOptions = {}): void {
   const doc = new jsPDF();
   const pageWidth = 210;
   const margin = 15;
@@ -356,7 +401,7 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   }
   
   if (company.siret) {
-    doc.text(`SIRET : ${company.siret}`, margin, yPos);
+    doc.text(`${T(options, 'SIRET', 'Company ID (SIRET)')} : ${company.siret}`, margin, yPos);
     yPos += 5;
   }
   
@@ -364,15 +409,15 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
-  doc.text('DEVIS', pageWidth - margin, 20, { align: 'right' });
+  doc.text(T(options, 'DEVIS', 'QUOTE'), pageWidth - margin, 20, { align: 'right' });
   
   // Infos devis à droite
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text(`N° : ${quote.quote_number}`, pageWidth - margin, 30, { align: 'right' });
-  doc.text(`Date : ${formatDate(quote.issue_date)}`, pageWidth - margin, 36, { align: 'right' });
-  doc.text(`Validité : ${formatDate(quote.valid_until)}`, pageWidth - margin, 42, { align: 'right' });
+  doc.text(`${T(options, 'N°', 'No.')} : ${quote.quote_number}`, pageWidth - margin, 30, { align: 'right' });
+  doc.text(`Date : ${formatDate(quote.issue_date, options)}`, pageWidth - margin, 36, { align: 'right' });
+  doc.text(`${T(options, 'Validité', 'Valid until')} : ${formatDate(quote.valid_until, options)}`, pageWidth - margin, 42, { align: 'right' });
   
   // === ENCADRÉ CLIENT ===
   const clientBoxY = 60;
@@ -395,7 +440,7 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('Destinataire :', margin + 5, clientY);
+  doc.text(T(options, 'Destinataire :', 'Recipient:'), margin + 5, clientY);
   clientY += 7;
   
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
@@ -419,13 +464,13 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   const tableData = quote.items.map(item => [
     item.description,
     item.quantity.toString(),
-    formatCurrency(item.unitPrice),
-    formatCurrency(item.total)
+    formatCurrency(item.unitPrice, options),
+    formatCurrency(item.total, options)
   ]);
   
   autoTable(doc, {
     startY: tableStartY,
-    head: [['Désignation', 'Quantité', 'Prix unitaire HT', 'Total HT']],
+    head: [isEn(options) ? ['Description', 'Qty', 'Unit price', 'Amount'] : ['Désignation', 'Quantité', 'Prix unitaire HT', 'Total HT']],
     body: tableData,
     theme: 'plain',
     styles: {
@@ -460,35 +505,35 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('Total HT :', totalsX, finalY);
-  doc.text(formatCurrency(Number(quote.subtotal)), pageWidth - margin, finalY, { align: 'right' });
+  doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
+  doc.text(formatCurrency(Number(quote.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
   finalY += 8;
   
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text('TVA non applicable, art. 293 B du CGI', totalsX, finalY);
+  doc.text(T(options, 'TVA non applicable, art. 293 B du CGI', 'VAT not applicable, art. 293 B of the French tax code'), totalsX, finalY);
   finalY += 10;
   
   doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Total TTC :', totalsX, finalY);
-  doc.text(formatCurrency(Number(quote.total)), pageWidth - margin, finalY, { align: 'right' });
+  doc.text(T(options, 'Total TTC :', 'Total due:'), totalsX, finalY);
+  doc.text(formatCurrency(Number(quote.total), options), pageWidth - margin, finalY, { align: 'right' });
   finalY += 20;
   
   // === CONDITIONS ===
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Ce devis est valable ${company.payment_delay || 30} jours à compter de sa date d'émission.`, margin, finalY);
+  doc.text(isEn(options) ? `This quote is valid for ${company.payment_delay || 30} days from the issue date.` : `Ce devis est valable ${company.payment_delay || 30} jours à compter de sa date d'émission.`, margin, finalY);
   finalY += 5;
-  doc.text('Pour acceptation, retournez ce devis signé avec la mention "Bon pour accord".', margin, finalY);
+  doc.text(T(options, 'Pour acceptation, retournez ce devis signé avec la mention "Bon pour accord".', 'To accept, please return this quote signed with the wording "Agreed".'), margin, finalY);
   finalY += 15;
   
   // Zone signature
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFont('helvetica', 'bold');
-  doc.text('Signature (précédée de "Bon pour accord") :', margin, finalY);
+  doc.text(T(options, 'Signature (précédée de "Bon pour accord") :', 'Signature (preceded by "Agreed"):'), margin, finalY);
   finalY += 5;
   
   doc.setDrawColor(200, 200, 200);
@@ -496,8 +541,19 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo): void {
   doc.rect(margin, finalY, 80, 25);
   
   doc.setFont('helvetica', 'normal');
-  doc.text('Date :', margin + 90, finalY + 15);
+  doc.text(T(options, 'Date :', 'Date:'), margin + 90, finalY + 15);
   doc.line(margin + 105, finalY + 15, margin + 160, finalY + 15);
   
-  doc.save(`${quote.quote_number}.pdf`);
+  if (options.currency === 'USD' && options.rate) {
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    doc.text(
+      `Amounts converted from EUR at the daily rate of ${options.rate.toFixed(4)} USD/EUR${options.rateDate ? ` (${options.rateDate})` : ''}.`,
+      margin,
+      finalY + 35
+    );
+  }
+
+  doc.save(`${quote.quote_number}${isEn(options) ? '-EN' : ''}.pdf`);
 }
