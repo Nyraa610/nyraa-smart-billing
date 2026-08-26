@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Client } from "@/hooks/useSupabaseClients";
-import { QuoteItem, QuoteStatus } from "@/hooks/useSupabaseQuotes";
+import { Quote, QuoteItem, QuoteStatus } from "@/hooks/useSupabaseQuotes";
 import { CompanyInfo } from "@/hooks/useSupabaseCompanyInfo";
 
 interface QuoteFormProps {
@@ -25,19 +25,40 @@ interface QuoteFormProps {
     status: QuoteStatus;
     notes: string | null;
   }) => void;
+  onUpdate?: (id: string, quote: Partial<Quote>) => Promise<boolean>;
   clients: Client[];
   companyInfo: CompanyInfo;
+  editQuote?: Quote | null;
 }
 
-export function QuoteForm({ open, onClose, onSave, clients, companyInfo }: QuoteFormProps) {
+export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInfo, editQuote }: QuoteFormProps) {
   const [clientId, setClientId] = useState<string>("");
-  const [quoteNumber, setQuoteNumber] = useState(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
-  const [validUntil, setValidUntil] = useState(() => {
+  const [quoteNumber, setQuoteNumber] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+  const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+
+  const isEditMode = !!editQuote;
+
+  const resetForm = () => {
+    setClientId("");
+    setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setQuoteNumber(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
     const d = new Date();
     d.setDate(d.getDate() + (companyInfo.payment_delay || 30));
-    return d.toISOString().split('T')[0];
-  });
-  const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setValidUntil(d.toISOString().split('T')[0]);
+  };
+
+  useEffect(() => {
+    if (editQuote) {
+      setClientId(editQuote.client_id || "");
+      setQuoteNumber(editQuote.quote_number);
+      setValidUntil(editQuote.valid_until);
+      setItems(editQuote.items.length > 0 ? editQuote.items : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    } else {
+      resetForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editQuote, open]);
 
   const addItem = () => setItems([...items, { description: "", quantity: 1, unitPrice: 0, total: 0 }]);
   const removeItem = (i: number) => items.length > 1 && setItems(items.filter((_, idx) => idx !== i));
@@ -56,24 +77,36 @@ export function QuoteForm({ open, onClose, onSave, clients, companyInfo }: Quote
   const tax = subtotal * (companyInfo.tax_rate / 100);
   const total = subtotal + tax;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!clientId) { toast.error("Sélectionnez un client"); return; }
     if (items.some(item => !item.description || item.total === 0)) { toast.error("Remplissez tous les articles"); return; }
+
+    if (isEditMode && editQuote && onUpdate) {
+      const success = await onUpdate(editQuote.id, {
+        client_id: clientId,
+        quote_number: quoteNumber,
+        valid_until: validUntil,
+        items,
+        subtotal,
+        tax,
+        total,
+      });
+      if (success) {
+        toast.success('Devis modifié avec succès');
+        onClose();
+      }
+      return;
+    }
+
     onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: null });
     resetForm();
     onClose();
   };
 
-  const resetForm = () => {
-    setClientId("");
-    setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
-    setQuoteNumber(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle className="text-xl font-bold">Nouveau Devis</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="text-xl font-bold">{isEditMode ? 'Modifier le Devis' : 'Nouveau Devis'}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2"><Label>Numéro</Label><Input value={quoteNumber} onChange={(e) => setQuoteNumber(e.target.value)} /></div>
@@ -107,7 +140,7 @@ export function QuoteForm({ open, onClose, onSave, clients, companyInfo }: Quote
 
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="outline" onClick={onClose}>Annuler</Button>
-            <Button onClick={handleSave} className="gradient-primary">Enregistrer</Button>
+            <Button onClick={handleSave} className="gradient-primary">{isEditMode ? 'Enregistrer les modifications' : 'Enregistrer'}</Button>
           </div>
         </div>
       </DialogContent>
