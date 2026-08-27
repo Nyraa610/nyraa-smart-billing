@@ -57,6 +57,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const resetForm = () => {
     setClientId("");
     setNotes("");
+    setTimeline(""); setPaymentTerms(""); setRevisions(""); setHosting(""); setMaintenance(""); setSupport(""); setFeatures("");
     setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     setQuoteNumber(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
     const d = new Date();
@@ -70,6 +71,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       setQuoteNumber(editQuote.quote_number);
       setValidUntil(editQuote.valid_until);
       setNotes(editQuote.notes || "");
+      setTimeline(editQuote.timeline || "");
+      setPaymentTerms(editQuote.payment_terms || "");
+      setRevisions(editQuote.revisions || "");
+      setHosting(editQuote.hosting || "");
+      setMaintenance(editQuote.maintenance || "");
+      setSupport(editQuote.support || "");
+      setFeatures(editQuote.features || "");
       setItems(editQuote.items.length > 0 ? editQuote.items : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     } else {
       resetForm();
