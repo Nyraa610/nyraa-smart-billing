@@ -26,6 +26,13 @@ export interface Quote {
   total: number;
   status: QuoteStatus;
   notes: string | null;
+  timeline?: string | null;
+  payment_terms?: string | null;
+  revisions?: string | null;
+  hosting?: string | null;
+  maintenance?: string | null;
+  support?: string | null;
+  features?: string | null;
   created_at: string;
   client?: {
     name: string;
