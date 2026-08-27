@@ -498,10 +498,24 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   
   // @ts-ignore
   let finalY = doc.lastAutoTable.finalY + 10;
-  
+
+  // === NOTES / DESCRIPTION (sous les prestations) ===
+  if (quote.notes) {
+    doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(T(options, 'Description :', 'Description:'), margin, finalY);
+    finalY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    const noteLines = doc.splitTextToSize(quote.notes, contentWidth);
+    doc.text(noteLines, margin, finalY);
+    finalY += noteLines.length * 4 + 8;
+  }
+
   // === TOTAUX ===
   const totalsX = 130;
-  
+
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
