@@ -113,6 +113,16 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
     if (!clientId) { toast.error("Sélectionnez un client"); return; }
     if (items.some(item => !item.description || item.total === 0)) { toast.error("Remplissez tous les articles"); return; }
 
+    const extra = {
+      timeline: timeline || null,
+      payment_terms: paymentTerms || null,
+      revisions: revisions || null,
+      hosting: hosting || null,
+      maintenance: maintenance || null,
+      support: support || null,
+      features: features || null,
+    };
+
     if (isEditMode && editQuote && onUpdate) {
       const success = await onUpdate(editQuote.id, {
         client_id: clientId,
@@ -123,6 +133,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
         tax,
         total,
         notes: notes || null,
+        ...extra,
       });
       if (success) {
         toast.success('Devis modifié avec succès');
@@ -131,7 +142,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       return;
     }
 
-    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null });
+    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, ...extra });
     resetForm();
     onClose();
   };
