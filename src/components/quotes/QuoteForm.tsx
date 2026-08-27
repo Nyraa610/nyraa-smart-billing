@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Client } from "@/hooks/useSupabaseClients";
 import { Quote, QuoteItem, QuoteStatus } from "@/hooks/useSupabaseQuotes";
@@ -65,6 +65,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
 
   const addItem = () => setItems([...items, { description: "", quantity: 1, unitPrice: 0, total: 0 }]);
   const removeItem = (i: number) => items.length > 1 && setItems(items.filter((_, idx) => idx !== i));
+  const moveItem = (from: number, to: number) => {
+    if (to < 0 || to >= items.length) return;
+    const newItems = [...items];
+    const [moved] = newItems.splice(from, 1);
+    newItems.splice(to, 0, moved);
+    setItems(newItems);
+  };
   const updateItem = (index: number, field: keyof QuoteItem, value: string | number) => {
     const newItems = [...items];
     if (field === 'quantity' || field === 'unitPrice') {
