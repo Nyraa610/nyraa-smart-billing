@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -212,8 +213,16 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
 
 
           <div className="border-t pt-4 space-y-1 text-right">
-            <p className="text-muted-foreground">Sous-total HT: {subtotal.toFixed(2)} €</p>
-            <p className="text-muted-foreground">TVA ({companyInfo.tax_rate}%): {tax.toFixed(2)} €</p>
+            <div className="flex items-center justify-end gap-2 pb-2">
+              <Checkbox id="showSubtotal" checked={showSubtotal} onCheckedChange={(v) => setShowSubtotal(v === true)} />
+              <Label htmlFor="showSubtotal" className="text-sm text-muted-foreground cursor-pointer">Afficher le sous-total HT</Label>
+            </div>
+            {showSubtotal && (
+              <>
+                <p className="text-muted-foreground">Sous-total HT: {subtotal.toFixed(2)} €</p>
+                <p className="text-muted-foreground">TVA ({companyInfo.tax_rate}%): {tax.toFixed(2)} €</p>
+              </>
+            )}
             <p className="text-lg font-bold text-secondary">Total TTC: {total.toFixed(2)} €</p>
           </div>
 
