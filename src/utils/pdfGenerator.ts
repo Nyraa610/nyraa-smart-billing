@@ -536,6 +536,60 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   doc.text(T(options, 'Total TTC :', 'Total due:'), totalsX, finalY);
   doc.text(formatCurrency(Number(quote.total), options), pageWidth - margin, finalY, { align: 'right' });
   finalY += 20;
+
+  // === CONDITIONS DU PROJET ===
+  const projectTerms: { label: string; value?: string | null }[] = [
+    { label: T(options, 'Timeline du projet', 'Project timeline'), value: quote.timeline },
+    { label: T(options, 'Modalités de paiement', 'Payment terms'), value: quote.payment_terms },
+    { label: T(options, 'Mises à jour incluses', 'Included updates'), value: quote.revisions },
+    { label: T(options, 'Hébergement', 'Hosting'), value: quote.hosting },
+    { label: T(options, 'Maintenance', 'Maintenance'), value: quote.maintenance },
+    { label: T(options, 'Support technique', 'Technical support'), value: quote.support },
+    { label: T(options, 'Fonctionnalités intégrées', 'Included features'), value: quote.features },
+  ].filter(t => t.value && t.value.trim());
+
+  if (projectTerms.length > 0) {
+    const ensureSpace = (needed: number) => {
+      if (finalY + needed > 275) {
+        doc.addPage();
+        finalY = 20;
+      }
+    };
+
+    ensureSpace(15);
+    doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(T(options, 'CONDITIONS DU PROJET', 'PROJECT TERMS'), margin, finalY);
+    finalY += 6;
+
+    projectTerms.forEach(term => {
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+      ensureSpace(10);
+      doc.text(`${term.label} :`, margin, finalY);
+      finalY += 4.5;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+      const lines = doc.splitTextToSize(String(term.value), contentWidth - 5) as string[];
+      lines.forEach(line => {
+        ensureSpace(6);
+        doc.text(line, margin + 3, finalY);
+        finalY += 4.5;
+      });
+      finalY += 2.5;
+    });
+
+    finalY += 5;
+    if (finalY > 230) {
+      doc.addPage();
+      finalY = 20;
+    }
+  }
+
+
   
   // === CONDITIONS ===
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
