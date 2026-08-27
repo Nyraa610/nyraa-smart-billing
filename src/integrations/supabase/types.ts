@@ -219,7 +219,6 @@ export type Database = {
           payment_terms: string | null
           quote_number: string
           revisions: string | null
-          show_subtotal: boolean | null
           status: Database["public"]["Enums"]["quote_status"]
           subtotal: number
           support: string | null
@@ -243,7 +242,6 @@ export type Database = {
           payment_terms?: string | null
           quote_number: string
           revisions?: string | null
-          show_subtotal?: boolean | null
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number
           support?: string | null
@@ -267,7 +265,6 @@ export type Database = {
           payment_terms?: string | null
           quote_number?: string
           revisions?: string | null
-          show_subtotal?: boolean | null
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number
           support?: string | null

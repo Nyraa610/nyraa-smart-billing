@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,7 +25,6 @@ interface QuoteFormProps {
     total: number;
     status: QuoteStatus;
     notes: string | null;
-    show_subtotal: boolean;
     timeline: string | null;
     payment_terms: string | null;
     revisions: string | null;
@@ -55,13 +53,10 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const [features, setFeatures] = useState("");
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
 
-  const [showSubtotal, setShowSubtotal] = useState<boolean>(true);
-
   const isEditMode = !!editQuote;
 
   const resetForm = () => {
     setClientId("");
-    setShowSubtotal(true);
     setNotes("");
     setTimeline(""); setPaymentTerms(""); setRevisions(""); setHosting(""); setMaintenance(""); setSupport(""); setFeatures("");
     setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
@@ -76,7 +71,6 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       setClientId(editQuote.client_id || "");
       setQuoteNumber(editQuote.quote_number);
       setValidUntil(editQuote.valid_until);
-      setShowSubtotal(editQuote.show_subtotal ?? true);
       setNotes(editQuote.notes || "");
       setTimeline(editQuote.timeline || "");
       setPaymentTerms(editQuote.payment_terms || "");
@@ -121,7 +115,6 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
     if (items.some(item => !item.description || item.total === 0)) { toast.error("Remplissez tous les articles"); return; }
 
     const extra = {
-      show_subtotal: showSubtotal,
       timeline: timeline || null,
       payment_terms: paymentTerms || null,
       revisions: revisions || null,
@@ -150,7 +143,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       return;
     }
 
-    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, show_subtotal: showSubtotal, ...extra });
+    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, ...extra });
     resetForm();
     onClose();
   };
@@ -213,16 +206,8 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
 
 
           <div className="border-t pt-4 space-y-1 text-right">
-            <div className="flex items-center justify-end gap-2 pb-2">
-              <Checkbox id="showSubtotal" checked={showSubtotal} onCheckedChange={(v) => setShowSubtotal(v === true)} />
-              <Label htmlFor="showSubtotal" className="text-sm text-muted-foreground cursor-pointer">Afficher le sous-total HT</Label>
-            </div>
-            {showSubtotal && (
-              <>
-                <p className="text-muted-foreground">Sous-total HT: {subtotal.toFixed(2)} €</p>
-                <p className="text-muted-foreground">TVA ({companyInfo.tax_rate}%): {tax.toFixed(2)} €</p>
-              </>
-            )}
+            <p className="text-muted-foreground">Sous-total HT: {subtotal.toFixed(2)} €</p>
+            <p className="text-muted-foreground">TVA ({companyInfo.tax_rate}%): {tax.toFixed(2)} €</p>
             <p className="text-lg font-bold text-secondary">Total TTC: {total.toFixed(2)} €</p>
           </div>
 

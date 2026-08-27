@@ -461,28 +461,25 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   
   // === TABLEAU DES PRESTATIONS ===
   const tableStartY = clientBoxY + clientBoxHeight + 15;
-  const showPrices = quote.show_subtotal !== false;
   
   const tableData: string[][] = [];
   const detailRowIndexes: number[] = [];
   quote.items.forEach(item => {
-    const row = showPrices
-      ? [item.description, item.quantity.toString(), formatCurrency(item.unitPrice, options), formatCurrency(item.total, options)]
-      : [item.description, item.quantity.toString()];
-    tableData.push(row);
+    tableData.push([
+      item.description,
+      item.quantity.toString(),
+      formatCurrency(item.unitPrice, options),
+      formatCurrency(item.total, options)
+    ]);
     if (item.details) {
       detailRowIndexes.push(tableData.length);
-      tableData.push(showPrices ? [item.details, '', '', ''] : [item.details, '']);
+      tableData.push([item.details, '', '', '']);
     }
   });
 
   autoTable(doc, {
     startY: tableStartY,
-    head: [
-      showPrices
-        ? (isEn(options) ? ['Description', 'Qty', 'Unit price', 'Amount'] : ['Désignation', 'Quantité', 'Prix unitaire HT', 'Total HT'])
-        : (isEn(options) ? ['Description', 'Qty'] : ['Désignation', 'Quantité'])
-    ],
+    head: [isEn(options) ? ['Description', 'Qty', 'Unit price', 'Amount'] : ['Désignation', 'Quantité', 'Prix unitaire HT', 'Total HT']],
     body: tableData,
     theme: 'plain',
     styles: {
@@ -496,17 +493,12 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
       fontStyle: 'bold',
       halign: 'left',
     },
-    columnStyles: showPrices
-      ? {
-          0: { cellWidth: 80 },
-          1: { cellWidth: 25, halign: 'center' },
-          2: { cellWidth: 35, halign: 'right' },
-          3: { cellWidth: 30, halign: 'right' },
-        }
-      : {
-          0: { cellWidth: 155 },
-          1: { cellWidth: 25, halign: 'center' },
-        },
+    columnStyles: {
+      0: { cellWidth: 80 },
+      1: { cellWidth: 25, halign: 'center' },
+      2: { cellWidth: 35, halign: 'right' },
+      3: { cellWidth: 30, halign: 'right' },
+    },
     alternateRowStyles: {
       fillColor: [250, 250, 250],
     },
@@ -520,7 +512,6 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
     },
     margin: { left: margin, right: margin },
   });
-
   
   // @ts-ignore
   let finalY = doc.lastAutoTable.finalY + 10;
@@ -528,17 +519,12 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   // === TOTAUX ===
   const totalsX = 130;
 
-  const showSubtotal = showPrices;
-
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(10);
-
-  if (showSubtotal) {
-    doc.setFont('helvetica', 'bold');
-    doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
-    doc.text(formatCurrency(Number(quote.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
-    finalY += 8;
-  }
+  doc.setFont('helvetica', 'bold');
+  doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
+  doc.text(formatCurrency(Number(quote.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
+  finalY += 8;
   
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
