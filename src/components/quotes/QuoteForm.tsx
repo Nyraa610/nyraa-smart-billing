@@ -187,6 +187,19 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
             ))}
           </div>
 
+          <div className="space-y-3 border-t pt-4">
+            <Label className="text-base font-semibold">Conditions du projet</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-sm">Timeline du projet</Label><Textarea rows={2} placeholder="Ex : 4 semaines, livraison le 30/09" value={timeline} onChange={(e) => setTimeline(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Modalités de paiement</Label><Textarea rows={2} placeholder="Ex : 40% à la commande, solde à la livraison" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Mises à jour incluses</Label><Textarea rows={2} placeholder="Ex : 3 séries de modifications" value={revisions} onChange={(e) => setRevisions(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Hébergement</Label><Textarea rows={2} placeholder="Ex : 1 an inclus puis 8 €/mois" value={hosting} onChange={(e) => setHosting(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Maintenance</Label><Textarea rows={2} placeholder="Ex : mises à jour techniques mensuelles" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Support technique</Label><Textarea rows={2} placeholder="Ex : support par email sous 48h" value={support} onChange={(e) => setSupport(e.target.value)} /></div>
+              <div className="space-y-1 md:col-span-2"><Label className="text-sm">Fonctionnalités intégrées</Label><Textarea rows={3} placeholder="Une fonctionnalité par ligne" value={features} onChange={(e) => setFeatures(e.target.value)} /></div>
+            </div>
+          </div>
+
 
           <div className="border-t pt-4 space-y-1 text-right">
             <p className="text-muted-foreground">Sous-total HT: {subtotal.toFixed(2)} €</p>
