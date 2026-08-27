@@ -35,6 +35,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const [clientId, setClientId] = useState<string>("");
   const [quoteNumber, setQuoteNumber] = useState("");
   const [validUntil, setValidUntil] = useState("");
+  const [notes, setNotes] = useState("");
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
 
   const isEditMode = !!editQuote;
