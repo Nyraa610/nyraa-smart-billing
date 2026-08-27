@@ -24,6 +24,13 @@ interface QuoteFormProps {
     total: number;
     status: QuoteStatus;
     notes: string | null;
+    timeline: string | null;
+    payment_terms: string | null;
+    revisions: string | null;
+    hosting: string | null;
+    maintenance: string | null;
+    support: string | null;
+    features: string | null;
   }) => void;
   onUpdate?: (id: string, quote: Partial<Quote>) => Promise<boolean>;
   clients: Client[];
@@ -36,6 +43,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const [quoteNumber, setQuoteNumber] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [notes, setNotes] = useState("");
+  const [timeline, setTimeline] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
+  const [revisions, setRevisions] = useState("");
+  const [hosting, setHosting] = useState("");
+  const [maintenance, setMaintenance] = useState("");
+  const [support, setSupport] = useState("");
+  const [features, setFeatures] = useState("");
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
 
   const isEditMode = !!editQuote;
