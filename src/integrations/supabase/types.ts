@@ -209,14 +209,21 @@ export type Database = {
         Row: {
           client_id: string | null
           created_at: string | null
+          features: string | null
+          hosting: string | null
           id: string
           issue_date: string
           items: Json
+          maintenance: string | null
           notes: string | null
+          payment_terms: string | null
           quote_number: string
+          revisions: string | null
           status: Database["public"]["Enums"]["quote_status"]
           subtotal: number
+          support: string | null
           tax: number
+          timeline: string | null
           total: number
           updated_at: string | null
           user_id: string
@@ -225,14 +232,21 @@ export type Database = {
         Insert: {
           client_id?: string | null
           created_at?: string | null
+          features?: string | null
+          hosting?: string | null
           id?: string
           issue_date?: string
           items?: Json
+          maintenance?: string | null
           notes?: string | null
+          payment_terms?: string | null
           quote_number: string
+          revisions?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number
+          support?: string | null
           tax?: number
+          timeline?: string | null
           total?: number
           updated_at?: string | null
           user_id: string
@@ -241,14 +255,21 @@ export type Database = {
         Update: {
           client_id?: string | null
           created_at?: string | null
+          features?: string | null
+          hosting?: string | null
           id?: string
           issue_date?: string
           items?: Json
+          maintenance?: string | null
           notes?: string | null
+          payment_terms?: string | null
           quote_number?: string
+          revisions?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number
+          support?: string | null
           tax?: number
+          timeline?: string | null
           total?: number
           updated_at?: string | null
           user_id?: string
