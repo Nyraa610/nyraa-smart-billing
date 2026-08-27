@@ -519,24 +519,28 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   // === TOTAUX ===
   const totalsX = 130;
 
-  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
-  doc.text(formatCurrency(Number(quote.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
-  finalY += 8;
-  
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-  doc.text(T(options, 'TVA non applicable, art. 293 B du CGI', 'VAT not applicable, art. 293 B of the French tax code'), totalsX, finalY);
-  finalY += 10;
-  
-  doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text(T(options, 'Total TTC :', 'Total due:'), totalsX, finalY);
-  doc.text(formatCurrency(Number(quote.total), options), pageWidth - margin, finalY, { align: 'right' });
-  finalY += 20;
+  if (quote.show_total !== false) {
+    doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
+    doc.text(formatCurrency(Number(quote.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
+    finalY += 8;
+
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    doc.text(T(options, 'TVA non applicable, art. 293 B du CGI', 'VAT not applicable, art. 293 B of the French tax code'), totalsX, finalY);
+    finalY += 10;
+
+    doc.setTextColor(COLORS.blue.r, COLORS.blue.g, COLORS.blue.b);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(T(options, 'Total TTC :', 'Total due:'), totalsX, finalY);
+    doc.text(formatCurrency(Number(quote.total), options), pageWidth - margin, finalY, { align: 'right' });
+    finalY += 20;
+  } else {
+    finalY += 10;
+  }
 
   // === CONDITIONS DU PROJET ===
   const projectTerms: { label: string; value?: string | null }[] = [

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Client } from "@/hooks/useSupabaseClients";
@@ -32,6 +33,7 @@ interface QuoteFormProps {
     maintenance: string | null;
     support: string | null;
     features: string | null;
+    show_total: boolean;
   }) => void;
   onUpdate?: (id: string, quote: Partial<Quote>) => Promise<boolean>;
   clients: Client[];
@@ -52,6 +54,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const [support, setSupport] = useState("");
   const [features, setFeatures] = useState("");
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+  const [showTotal, setShowTotal] = useState(true);
 
   const isEditMode = !!editQuote;
 
@@ -60,6 +63,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
     setNotes("");
     setTimeline(""); setPaymentTerms(""); setRevisions(""); setHosting(""); setMaintenance(""); setSupport(""); setFeatures("");
     setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setShowTotal(true);
     setQuoteNumber(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
     const d = new Date();
     d.setDate(d.getDate() + (companyInfo.payment_delay || 30));
@@ -80,6 +84,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       setSupport(editQuote.support || "");
       setFeatures(editQuote.features || "");
       setItems(editQuote.items.length > 0 ? editQuote.items : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+      setShowTotal(editQuote.show_total !== false);
     } else {
       resetForm();
     }
@@ -134,6 +139,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
         tax,
         total,
         notes: notes || null,
+        show_total: showTotal,
         ...extra,
       });
       if (success) {
@@ -143,7 +149,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       return;
     }
 
-    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, ...extra });
+    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, show_total: showTotal, ...extra });
     resetForm();
     onClose();
   };
@@ -204,6 +210,14 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
             </div>
           </div>
 
+
+          <div className="border-t pt-4 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="show-total" className="text-sm font-medium">Afficher le prix total sur le devis</Label>
+              <p className="text-xs text-muted-foreground">Si désactivé, les totaux (HT, TVA, TTC) n'apparaîtront ni dans l'aperçu ni dans le PDF.</p>
+            </div>
+            <Switch id="show-total" checked={showTotal} onCheckedChange={setShowTotal} />
+          </div>
 
           <div className="border-t pt-4 space-y-1 text-right">
             <p className="text-muted-foreground">Sous-total HT: {subtotal.toFixed(2)} €</p>
