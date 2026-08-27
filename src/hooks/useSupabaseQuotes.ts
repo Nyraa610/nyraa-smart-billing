@@ -8,6 +8,7 @@ export type QuoteStatus = 'en_attente' | 'accepte' | 'refuse' | 'expire';
 
 export interface QuoteItem {
   description: string;
+  details?: string;
   quantity: number;
   unitPrice: number;
   total: number;
