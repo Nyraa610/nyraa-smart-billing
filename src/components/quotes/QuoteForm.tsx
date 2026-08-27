@@ -42,6 +42,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
 
   const resetForm = () => {
     setClientId("");
+    setNotes("");
     setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     setQuoteNumber(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
     const d = new Date();
@@ -54,6 +55,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       setClientId(editQuote.client_id || "");
       setQuoteNumber(editQuote.quote_number);
       setValidUntil(editQuote.valid_until);
+      setNotes(editQuote.notes || "");
       setItems(editQuote.items.length > 0 ? editQuote.items : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     } else {
       resetForm();
@@ -91,6 +93,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
         subtotal,
         tax,
         total,
+        notes: notes || null,
       });
       if (success) {
         toast.success('Devis modifié avec succès');
