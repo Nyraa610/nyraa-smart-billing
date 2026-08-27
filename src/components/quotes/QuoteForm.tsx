@@ -141,9 +141,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
                   <div className="col-span-2 text-right font-semibold text-sm">{item.total.toFixed(2)} €</div>
                   <div className="col-span-1"><Button variant="ghost" size="icon" onClick={() => removeItem(index)} disabled={items.length === 1}><Trash2 size={16} className="text-destructive" /></Button></div>
                 </div>
-                <div className="grid grid-cols-12 gap-2">
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-5">
                     <Input placeholder="Détails (optionnel)" className="text-xs h-8 text-muted-foreground" value={item.details || ''} onChange={(e) => updateItem(index, 'details', e.target.value)} />
+                  </div>
+                  <div className="col-span-7 flex justify-end gap-1">
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveItem(index, index - 1)} disabled={index === 0} aria-label="Monter la prestation"><ArrowUp size={14} /></Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveItem(index, index + 1)} disabled={index === items.length - 1} aria-label="Descendre la prestation"><ArrowDown size={14} /></Button>
                   </div>
                 </div>
               </div>
