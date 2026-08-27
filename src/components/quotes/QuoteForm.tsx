@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
@@ -102,7 +103,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       return;
     }
 
-    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: null });
+    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null });
     resetForm();
     onClose();
   };
@@ -134,6 +135,11 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
                 <div className="col-span-1"><Button variant="ghost" size="icon" onClick={() => removeItem(index)} disabled={items.length === 1}><Trash2 size={16} className="text-destructive" /></Button></div>
               </div>
             ))}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Description / Notes (affichées sous les prestations)</Label>
+            <Textarea placeholder="Ex: Acompte de 30% à la commande, délais de livraison, conditions particulières..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
 
           <div className="border-t pt-4 space-y-1 text-right">
