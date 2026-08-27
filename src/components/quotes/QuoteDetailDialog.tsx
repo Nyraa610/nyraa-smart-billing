@@ -135,8 +135,12 @@ export function QuoteDetailDialog({ quote, open, onClose, onStatusChange, compan
 
           <div className="flex justify-end">
             <div className="w-64 space-y-2">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Sous-total HT</span><span>{Number(quote.subtotal).toFixed(2)} €</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">TVA</span><span>{Number(quote.tax).toFixed(2)} €</span></div>
+              {quote.show_subtotal !== false && (
+                <>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Sous-total HT</span><span>{Number(quote.subtotal).toFixed(2)} €</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">TVA</span><span>{Number(quote.tax).toFixed(2)} €</span></div>
+                </>
+              )}
               <div className="flex justify-between text-lg font-bold border-t pt-2"><span>Total TTC</span><span className="text-secondary">{Number(quote.total).toFixed(2)} €</span></div>
             </div>
           </div>
