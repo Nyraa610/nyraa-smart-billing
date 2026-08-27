@@ -94,6 +94,14 @@ export function QuoteDetailDialog({ quote, open, onClose, onStatusChange, compan
             </table>
           </div>
 
+          {quote.notes && (
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">Description</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{quote.notes}</p>
+            </div>
+          )}
+
+
           <div className="flex justify-end">
             <div className="w-64 space-y-2">
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Sous-total HT</span><span>{Number(quote.subtotal).toFixed(2)} €</span></div>
