@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Client } from "@/hooks/useSupabaseClients";
@@ -209,6 +210,14 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
             </div>
           </div>
 
+
+          <div className="border-t pt-4 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="show-total" className="text-sm font-medium">Afficher le prix total sur le devis</Label>
+              <p className="text-xs text-muted-foreground">Si désactivé, les totaux (HT, TVA, TTC) n'apparaîtront ni dans l'aperçu ni dans le PDF.</p>
+            </div>
+            <Switch id="show-total" checked={showTotal} onCheckedChange={setShowTotal} />
+          </div>
 
           <div className="border-t pt-4 space-y-1 text-right">
             <p className="text-muted-foreground">Sous-total HT: {subtotal.toFixed(2)} €</p>
