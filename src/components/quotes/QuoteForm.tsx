@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
@@ -24,6 +25,13 @@ interface QuoteFormProps {
     total: number;
     status: QuoteStatus;
     notes: string | null;
+    timeline: string | null;
+    payment_terms: string | null;
+    revisions: string | null;
+    hosting: string | null;
+    maintenance: string | null;
+    support: string | null;
+    features: string | null;
   }) => void;
   onUpdate?: (id: string, quote: Partial<Quote>) => Promise<boolean>;
   clients: Client[];
@@ -36,6 +44,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const [quoteNumber, setQuoteNumber] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [notes, setNotes] = useState("");
+  const [timeline, setTimeline] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
+  const [revisions, setRevisions] = useState("");
+  const [hosting, setHosting] = useState("");
+  const [maintenance, setMaintenance] = useState("");
+  const [support, setSupport] = useState("");
+  const [features, setFeatures] = useState("");
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
 
   const isEditMode = !!editQuote;
@@ -43,6 +58,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const resetForm = () => {
     setClientId("");
     setNotes("");
+    setTimeline(""); setPaymentTerms(""); setRevisions(""); setHosting(""); setMaintenance(""); setSupport(""); setFeatures("");
     setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     setQuoteNumber(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
     const d = new Date();
@@ -56,6 +72,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       setQuoteNumber(editQuote.quote_number);
       setValidUntil(editQuote.valid_until);
       setNotes(editQuote.notes || "");
+      setTimeline(editQuote.timeline || "");
+      setPaymentTerms(editQuote.payment_terms || "");
+      setRevisions(editQuote.revisions || "");
+      setHosting(editQuote.hosting || "");
+      setMaintenance(editQuote.maintenance || "");
+      setSupport(editQuote.support || "");
+      setFeatures(editQuote.features || "");
       setItems(editQuote.items.length > 0 ? editQuote.items : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     } else {
       resetForm();
@@ -91,6 +114,16 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
     if (!clientId) { toast.error("Sélectionnez un client"); return; }
     if (items.some(item => !item.description || item.total === 0)) { toast.error("Remplissez tous les articles"); return; }
 
+    const extra = {
+      timeline: timeline || null,
+      payment_terms: paymentTerms || null,
+      revisions: revisions || null,
+      hosting: hosting || null,
+      maintenance: maintenance || null,
+      support: support || null,
+      features: features || null,
+    };
+
     if (isEditMode && editQuote && onUpdate) {
       const success = await onUpdate(editQuote.id, {
         client_id: clientId,
@@ -101,6 +134,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
         tax,
         total,
         notes: notes || null,
+        ...extra,
       });
       if (success) {
         toast.success('Devis modifié avec succès');
@@ -109,7 +143,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       return;
     }
 
-    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null });
+    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, ...extra });
     resetForm();
     onClose();
   };
@@ -152,6 +186,19 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <Label className="text-base font-semibold">Conditions du projet</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-sm">Timeline du projet</Label><Textarea rows={2} placeholder="Ex : 4 semaines, livraison le 30/09" value={timeline} onChange={(e) => setTimeline(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Modalités de paiement</Label><Textarea rows={2} placeholder="Ex : 40% à la commande, solde à la livraison" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Mises à jour incluses</Label><Textarea rows={2} placeholder="Ex : 3 séries de modifications" value={revisions} onChange={(e) => setRevisions(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Hébergement</Label><Textarea rows={2} placeholder="Ex : 1 an inclus puis 8 €/mois" value={hosting} onChange={(e) => setHosting(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Maintenance</Label><Textarea rows={2} placeholder="Ex : mises à jour techniques mensuelles" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-sm">Support technique</Label><Textarea rows={2} placeholder="Ex : support par email sous 48h" value={support} onChange={(e) => setSupport(e.target.value)} /></div>
+              <div className="space-y-1 md:col-span-2"><Label className="text-sm">Fonctionnalités intégrées</Label><Textarea rows={3} placeholder="Une fonctionnalité par ligne" value={features} onChange={(e) => setFeatures(e.target.value)} /></div>
+            </div>
           </div>
 
 
