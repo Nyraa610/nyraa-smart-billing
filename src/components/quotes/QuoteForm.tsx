@@ -189,7 +189,10 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
           </div>
 
           <div className="space-y-3 border-t pt-4">
-            <Label className="text-base font-semibold">Conditions du projet</Label>
+            <div className="space-y-1">
+              <Label className="text-base font-semibold">Conditions du projet</Label>
+              <p className="text-xs text-muted-foreground">Mise en forme : <code>**gras**</code>, <code>__souligné__</code>, <code>*italique*</code></p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1"><Label className="text-sm">Timeline du projet</Label><Textarea rows={2} placeholder="Ex : 4 semaines, livraison le 30/09" value={timeline} onChange={(e) => setTimeline(e.target.value)} /></div>
               <div className="space-y-1"><Label className="text-sm">Modalités de paiement</Label><Textarea rows={2} placeholder="Ex : 40% à la commande, solde à la livraison" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} /></div>

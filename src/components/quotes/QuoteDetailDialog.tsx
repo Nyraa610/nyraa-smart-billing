@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RichText } from "@/components/ui/rich-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Clock, Download, Languages, Loader2 } from "lucide-react";
@@ -123,7 +124,7 @@ export function QuoteDetailDialog({ quote, open, onClose, onStatusChange, compan
               ].filter(f => f.value).map(f => (
                 <div key={f.label} className="text-sm">
                   <span className="font-medium">{f.label} : </span>
-                  <span className="text-muted-foreground whitespace-pre-wrap">{f.value}</span>
+                  <RichText text={String(f.value)} className="text-muted-foreground" />
                 </div>
               ))}
             </div>
