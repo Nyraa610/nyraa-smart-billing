@@ -32,6 +32,7 @@ interface QuoteFormProps {
     maintenance: string | null;
     support: string | null;
     features: string | null;
+    show_total: boolean;
   }) => void;
   onUpdate?: (id: string, quote: Partial<Quote>) => Promise<boolean>;
   clients: Client[];
@@ -52,6 +53,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const [support, setSupport] = useState("");
   const [features, setFeatures] = useState("");
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+  const [showTotal, setShowTotal] = useState(true);
 
   const isEditMode = !!editQuote;
 
@@ -60,6 +62,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
     setNotes("");
     setTimeline(""); setPaymentTerms(""); setRevisions(""); setHosting(""); setMaintenance(""); setSupport(""); setFeatures("");
     setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    setShowTotal(true);
     setQuoteNumber(`${companyInfo.quote_prefix}${Date.now().toString().slice(-6)}`);
     const d = new Date();
     d.setDate(d.getDate() + (companyInfo.payment_delay || 30));
@@ -80,6 +83,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       setSupport(editQuote.support || "");
       setFeatures(editQuote.features || "");
       setItems(editQuote.items.length > 0 ? editQuote.items : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+      setShowTotal(editQuote.show_total !== false);
     } else {
       resetForm();
     }
