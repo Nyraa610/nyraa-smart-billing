@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Client } from "@/hooks/useSupabaseClients";
 import { Quote, QuoteItem, QuoteStatus } from "@/hooks/useSupabaseQuotes";
@@ -65,6 +65,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
 
   const addItem = () => setItems([...items, { description: "", quantity: 1, unitPrice: 0, total: 0 }]);
   const removeItem = (i: number) => items.length > 1 && setItems(items.filter((_, idx) => idx !== i));
+  const moveItem = (from: number, to: number) => {
+    if (to < 0 || to >= items.length) return;
+    const newItems = [...items];
+    const [moved] = newItems.splice(from, 1);
+    newItems.splice(to, 0, moved);
+    setItems(newItems);
+  };
   const updateItem = (index: number, field: keyof QuoteItem, value: string | number) => {
     const newItems = [...items];
     if (field === 'quantity' || field === 'unitPrice') {
@@ -134,9 +141,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
                   <div className="col-span-2 text-right font-semibold text-sm">{item.total.toFixed(2)} €</div>
                   <div className="col-span-1"><Button variant="ghost" size="icon" onClick={() => removeItem(index)} disabled={items.length === 1}><Trash2 size={16} className="text-destructive" /></Button></div>
                 </div>
-                <div className="grid grid-cols-12 gap-2">
+                <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-5">
                     <Input placeholder="Détails (optionnel)" className="text-xs h-8 text-muted-foreground" value={item.details || ''} onChange={(e) => updateItem(index, 'details', e.target.value)} />
+                  </div>
+                  <div className="col-span-7 flex justify-end gap-1">
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveItem(index, index - 1)} disabled={index === 0} aria-label="Monter la prestation"><ArrowUp size={14} /></Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => moveItem(index, index + 1)} disabled={index === items.length - 1} aria-label="Descendre la prestation"><ArrowDown size={14} /></Button>
                   </div>
                 </div>
               </div>
