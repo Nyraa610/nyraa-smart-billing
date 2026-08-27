@@ -528,7 +528,7 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   // === TOTAUX ===
   const totalsX = 130;
 
-  const showSubtotal = quote.show_subtotal !== false;
+  const showSubtotal = showPrices;
 
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(10);
