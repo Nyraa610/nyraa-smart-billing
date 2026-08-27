@@ -85,7 +85,7 @@ export function QuoteDetailDialog({ quote, open, onClose, onStatusChange, compan
               </tr></thead>
               <tbody>{quote.items.map((item, i) => (
                 <tr key={i} className="border-t">
-                  <td className="p-3 text-sm">{item.description}</td>
+                  <td className="p-3 text-sm">{item.description}{item.details && <span className="block text-xs text-muted-foreground italic mt-0.5">{item.details}</span>}</td>
                   <td className="p-3 text-center text-sm">{item.quantity}</td>
                   <td className="p-3 text-right text-sm">{item.unitPrice.toFixed(2)} €</td>
                   <td className="p-3 text-right font-semibold text-sm">{item.total.toFixed(2)} €</td>

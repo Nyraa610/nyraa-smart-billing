@@ -461,13 +461,21 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   // === TABLEAU DES PRESTATIONS ===
   const tableStartY = clientBoxY + clientBoxHeight + 15;
   
-  const tableData = quote.items.map(item => [
-    item.description,
-    item.quantity.toString(),
-    formatCurrency(item.unitPrice, options),
-    formatCurrency(item.total, options)
-  ]);
-  
+  const tableData: string[][] = [];
+  const detailRowIndexes: number[] = [];
+  quote.items.forEach(item => {
+    tableData.push([
+      item.description,
+      item.quantity.toString(),
+      formatCurrency(item.unitPrice, options),
+      formatCurrency(item.total, options)
+    ]);
+    if (item.details) {
+      detailRowIndexes.push(tableData.length);
+      tableData.push([item.details, '', '', '']);
+    }
+  });
+
   autoTable(doc, {
     startY: tableStartY,
     head: [isEn(options) ? ['Description', 'Qty', 'Unit price', 'Amount'] : ['Désignation', 'Quantité', 'Prix unitaire HT', 'Total HT']],
@@ -492,6 +500,14 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
     },
     alternateRowStyles: {
       fillColor: [250, 250, 250],
+    },
+    didParseCell: (data) => {
+      if (data.section === 'body' && detailRowIndexes.includes(data.row.index)) {
+        data.cell.styles.fontSize = 8;
+        data.cell.styles.fontStyle = 'italic';
+        data.cell.styles.textColor = [COLORS.muted.r, COLORS.muted.g, COLORS.muted.b];
+        data.cell.styles.cellPadding = { top: 0, right: 5, bottom: 5, left: 8 };
+      }
     },
     margin: { left: margin, right: margin },
   });
