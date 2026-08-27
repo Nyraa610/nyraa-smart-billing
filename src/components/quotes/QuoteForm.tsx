@@ -25,6 +25,7 @@ interface QuoteFormProps {
     total: number;
     status: QuoteStatus;
     notes: string | null;
+    show_subtotal: boolean;
     timeline: string | null;
     payment_terms: string | null;
     revisions: string | null;
@@ -53,10 +54,13 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
   const [features, setFeatures] = useState("");
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
 
+  const [showSubtotal, setShowSubtotal] = useState<boolean>(true);
+
   const isEditMode = !!editQuote;
 
   const resetForm = () => {
     setClientId("");
+    setShowSubtotal(true);
     setNotes("");
     setTimeline(""); setPaymentTerms(""); setRevisions(""); setHosting(""); setMaintenance(""); setSupport(""); setFeatures("");
     setItems([{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
@@ -71,6 +75,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       setClientId(editQuote.client_id || "");
       setQuoteNumber(editQuote.quote_number);
       setValidUntil(editQuote.valid_until);
+      setShowSubtotal(editQuote.show_subtotal ?? true);
       setNotes(editQuote.notes || "");
       setTimeline(editQuote.timeline || "");
       setPaymentTerms(editQuote.payment_terms || "");
