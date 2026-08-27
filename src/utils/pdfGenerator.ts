@@ -519,12 +519,17 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
   // === TOTAUX ===
   const totalsX = 130;
 
+  const showSubtotal = quote.show_subtotal !== false;
+
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
-  doc.text(formatCurrency(Number(quote.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
-  finalY += 8;
+
+  if (showSubtotal) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(T(options, 'Total HT :', 'Subtotal:'), totalsX, finalY);
+    doc.text(formatCurrency(Number(quote.subtotal), options), pageWidth - margin, finalY, { align: 'right' });
+    finalY += 8;
+  }
   
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
