@@ -101,6 +101,36 @@ export function QuoteDetailDialog({ quote, open, onClose, onStatusChange, compan
             </div>
           )}
 
+          {[
+            { label: "Timeline du projet", value: quote.timeline },
+            { label: "Modalités de paiement", value: quote.payment_terms },
+            { label: "Mises à jour incluses", value: quote.revisions },
+            { label: "Hébergement", value: quote.hosting },
+            { label: "Maintenance", value: quote.maintenance },
+            { label: "Support technique", value: quote.support },
+            { label: "Fonctionnalités intégrées", value: quote.features },
+          ].some(f => f.value) && (
+            <div className="border rounded-lg p-3 space-y-2">
+              <p className="text-sm font-semibold">Conditions du projet</p>
+              {[
+                { label: "Timeline du projet", value: quote.timeline },
+                { label: "Modalités de paiement", value: quote.payment_terms },
+                { label: "Mises à jour incluses", value: quote.revisions },
+                { label: "Hébergement", value: quote.hosting },
+                { label: "Maintenance", value: quote.maintenance },
+                { label: "Support technique", value: quote.support },
+                { label: "Fonctionnalités intégrées", value: quote.features },
+              ].filter(f => f.value).map(f => (
+                <div key={f.label} className="text-sm">
+                  <span className="font-medium">{f.label} : </span>
+                  <span className="text-muted-foreground whitespace-pre-wrap">{f.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+
+
 
           <div className="flex justify-end">
             <div className="w-64 space-y-2">
