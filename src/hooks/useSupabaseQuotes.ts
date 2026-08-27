@@ -33,6 +33,7 @@ export interface Quote {
   maintenance?: string | null;
   support?: string | null;
   features?: string | null;
+  show_total?: boolean;
   created_at: string;
   client?: {
     name: string;
