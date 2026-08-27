@@ -26,6 +26,7 @@ export interface Quote {
   total: number;
   status: QuoteStatus;
   notes: string | null;
+  show_subtotal?: boolean | null;
   timeline?: string | null;
   payment_terms?: string | null;
   revisions?: string | null;
