@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { layoutRichText } from './richText';
 import autoTable from 'jspdf-autotable';
 import { Invoice } from '@/hooks/useSupabaseInvoices';
 import { Quote } from '@/hooks/useSupabaseQuotes';
@@ -573,10 +574,21 @@ export function generateQuotePDF(quote: Quote, company: CompanyInfo, options: Pd
 
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
-      const lines = doc.splitTextToSize(String(term.value), contentWidth - 5) as string[];
-      lines.forEach(line => {
+      const richLines = layoutRichText(doc, String(term.value), contentWidth - 5);
+      richLines.forEach(segs => {
         ensureSpace(6);
-        doc.text(line, margin + 3, finalY);
+        segs.forEach(seg => {
+          doc.setFont('helvetica', seg.bold && seg.italic ? 'bolditalic' : seg.bold ? 'bold' : seg.italic ? 'italic' : 'normal');
+          if (seg.bold) doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+          else doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+          const sx = margin + 3 + seg.x;
+          doc.text(seg.text, sx, finalY);
+          if (seg.underline && seg.text.trim()) {
+            doc.setLineWidth(0.3);
+            doc.line(sx, finalY + 1, sx + seg.width, finalY + 1);
+          }
+        });
+        doc.setFont('helvetica', 'normal');
         finalY += 4.5;
       });
       finalY += 2.5;
