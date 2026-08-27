@@ -138,6 +138,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
         tax,
         total,
         notes: notes || null,
+        show_total: showTotal,
         ...extra,
       });
       if (success) {
@@ -147,7 +148,7 @@ export function QuoteForm({ open, onClose, onSave, onUpdate, clients, companyInf
       return;
     }
 
-    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, ...extra });
+    onSave({ client_id: clientId, quote_number: quoteNumber, issue_date: new Date().toISOString().split('T')[0], valid_until: validUntil, items, subtotal, tax, total, status: 'en_attente', notes: notes || null, show_total: showTotal, ...extra });
     resetForm();
     onClose();
   };
